@@ -158,9 +158,9 @@ const MEALS = [
   {type:"pre",       title:"Pre-Gym",   items:"1 banana  or  1 crumpet + honey", cal:105,p:1,f:0,c:27},
   {type:"breakfast", title:"Breakfast", items:"40g homemade muesli + almond milk + 30g whey + 150g protein yoghurt + 100g blueberries", cal:420,p:39,f:9,c:45, alts:ALT.bfast},
   {type:"snack",     title:"Snack",     items:"1 piece of fruit (e.g. apple)", cal:60,p:0,f:0,c:15, alts:ALT.fruit},
-  {type:"lunch",     title:"Lunch",     items:"120g chicken (raw) + 100g rice (cooked) + veg/salad + ¼ avocado + 1 tsp olive oil", cal:430,p:32,f:15,c:41, alts:ALT.lunch, carbs:{rice:100,kumara:160,potato:200}},
+  {type:"lunch",     title:"Lunch",     items:"120g chicken (raw) + 100g rice (cooked) + veg/salad + ¼ avocado + 1 tsp olive oil", cal:430,p:32,f:15,c:41, alts:ALT.lunch, carbs:{rice:100,pasta:90,kumara:160,potato:200}},
   {type:"snack",     title:"Snack",     items:"20g slice of cheese + 4 Vita Wheat crackers", cal:170,p:8,f:8,c:16, alts:ALT.csnack},
-  {type:"dinner",    title:"Dinner",    items:"120g chicken (raw) + 150g kumara (cooked) + veg/salad + 30g feta + 1 tsp olive oil", cal:400,p:38,f:12,c:34, alts:ALT.dinner, carbs:{rice:95,kumara:150,potato:190}},
+  {type:"dinner",    title:"Dinner",    items:"120g chicken (raw) + 150g kumara (cooked) + veg/salad + 30g feta + 1 tsp olive oil", cal:400,p:38,f:12,c:34, alts:ALT.dinner, carbs:{rice:95,pasta:85,kumara:150,potato:190}},
   {type:"dessert",   title:"Dessert",   items:"4 small pieces of dark chocolate", cal:110,p:1,f:7,c:10, alts:ALT.des},
 ];
 
@@ -180,14 +180,19 @@ const carbsEl=document.getElementById('carbs');
 const mealsEl=document.getElementById('meals');
 const footEl=document.getElementById('foot');
 
-const CARB_KEYS=[['rice','🍚','rice'],['kumara','🍠','kumara'],['potato','🥔','potato']];
+const CARB_KEYS=[['rice','🍚','rice'],['pasta','🍝','pasta'],['kumara','🍠','kumara'],['potato','🥔','potato']];
+/* cooked → raw (dry) conversion; only shown where raw differs meaningfully */
+const RAW_FACTOR={rice:0.33, pasta:0.42};
 
 function renderCarbs(){
   const rows=MEALS.filter(m=>m.carbs);
   if(!rows.length){ carbcardEl.style.display='none'; carbsEl.innerHTML=''; return; }
   carbcardEl.style.display='block';
   carbsEl.innerHTML=rows.map(m=>{
-    const vals=CARB_KEYS.filter(([k])=>m.carbs[k]!=null).map(([k,e,label])=>`${e} ${m.carbs[k]}g ${label}`);
+    const vals=CARB_KEYS.filter(([k])=>m.carbs[k]!=null).map(([k,e,label])=>{
+      const raw=RAW_FACTOR[k] ? ` (${Math.round(m.carbs[k]*RAW_FACTOR[k])}g raw)` : '';
+      return `${e} ${m.carbs[k]}g ${label}${raw}`;
+    });
     return `<div class="carb-row"><span class="carb-meal">${m.title}</span><span class="carb-vals">${vals.join(' = ')}</span></div>`;
   }).join('');
 }
