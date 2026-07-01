@@ -108,6 +108,9 @@
 </div>
 
 <script>
+/* ---------- version (keep in sync with version.txt on deploy) ---------- */
+const APP_VERSION = '2026-07-02.1';
+
 /* ---------- day targets (verbatim from Brenda's guide) ---------- */
 const TARGETS = {cal:1690, p:121, f:64, c:141};
 
@@ -237,10 +240,24 @@ function render(){
   });
 
   footEl.innerHTML=`Macros are estimates to guide swaps — pick any alternative and you'll stay close to your day's target.<br>
-    Pre-gym &amp; breakfast kept as planned. Built from your nutrition guide.`;
+    Pre-gym &amp; breakfast kept as planned. Built from your nutrition guide.<br>
+    <span style="opacity:.6">v${APP_VERSION}</span>`;
 }
 
 render();
+
+/* ---------- auto-update: fetch fresh version, reload if stale (offline-safe) ---------- */
+(async function checkForUpdate(){
+  try{
+    const res=await fetch('version.txt?_='+Date.now(),{cache:'no-store'});
+    if(!res.ok) return;
+    const latest=(await res.text()).trim();
+    if(latest && latest!==APP_VERSION && !sessionStorage.getItem('bv_reloaded')){
+      sessionStorage.setItem('bv_reloaded','1');
+      location.replace(location.pathname+'?v='+encodeURIComponent(latest));
+    }
+  }catch(e){ /* offline — keep working with the cached copy */ }
+})();
 </script>
 </body>
 </html>
