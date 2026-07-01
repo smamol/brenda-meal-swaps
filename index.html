@@ -42,6 +42,16 @@
   .stat.fat b{color:var(--fat)} .stat.carb b{color:var(--carb)}
   .targets .note{font-size:12px; color:var(--muted2); margin:12px 0 0; line-height:1.5}
 
+  /* carb swap overview */
+  .carbcard{background:var(--bg2); border:1px solid var(--line); border-radius:18px; padding:16px; margin:-6px 0 18px}
+  .carbcard h2{font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);
+    margin:0 0 10px; font-weight:700}
+  .carb-row{display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+    padding:7px 0; border-bottom:1px solid var(--line); font-size:13px}
+  .carb-row:last-child{border-bottom:none}
+  .carb-meal{font-weight:700; flex:0 0 auto}
+  .carb-vals{color:var(--muted); text-align:right; font-variant-numeric:tabular-nums}
+
   /* meal card */
   .meal{background:var(--card); border:1px solid var(--line); border-radius:18px; margin-bottom:12px; overflow:hidden}
   .meal-head{display:flex; align-items:flex-start; gap:13px; padding:15px 16px; cursor:default}
@@ -88,6 +98,10 @@
     <h2>Day Targets</h2>
     <div class="stats" id="stats"></div>
     <p class="note">From your nutrition guide — a slight calorie deficit while keeping the nutrition to support energy, bones &amp; strength. Tap any meal to swap it and stay on target.</p>
+  </div>
+  <div class="carbcard" id="carbcard">
+    <h2>Carb Swap Amounts</h2>
+    <div id="carbs"></div>
   </div>
   <div id="meals"></div>
   <footer id="foot"></footer>
@@ -144,9 +158,9 @@ const MEALS = [
   {type:"pre",       title:"Pre-Gym",   items:"1 banana  or  1 crumpet + honey", cal:105,p:1,f:0,c:27},
   {type:"breakfast", title:"Breakfast", items:"40g homemade muesli + almond milk + 30g whey + 150g protein yoghurt + 100g blueberries", cal:420,p:39,f:9,c:45, alts:ALT.bfast},
   {type:"snack",     title:"Snack",     items:"1 piece of fruit (e.g. apple)", cal:60,p:0,f:0,c:15, alts:ALT.fruit},
-  {type:"lunch",     title:"Lunch",     items:"120g chicken (raw) + 100g rice (cooked) + veg/salad + ¼ avocado + 1 tsp olive oil", cal:430,p:32,f:15,c:41, alts:ALT.lunch},
+  {type:"lunch",     title:"Lunch",     items:"120g chicken (raw) + 100g rice (cooked) + veg/salad + ¼ avocado + 1 tsp olive oil", cal:430,p:32,f:15,c:41, alts:ALT.lunch, carbs:{rice:100,kumara:160,potato:200}},
   {type:"snack",     title:"Snack",     items:"20g slice of cheese + 4 Vita Wheat crackers", cal:170,p:8,f:8,c:16, alts:ALT.csnack},
-  {type:"dinner",    title:"Dinner",    items:"120g chicken (raw) + 150g kumara (cooked) + veg/salad + 30g feta + 1 tsp olive oil", cal:400,p:38,f:12,c:34, alts:ALT.dinner},
+  {type:"dinner",    title:"Dinner",    items:"120g chicken (raw) + 150g kumara (cooked) + veg/salad + 30g feta + 1 tsp olive oil", cal:400,p:38,f:12,c:34, alts:ALT.dinner, carbs:{rice:95,kumara:150,potato:190}},
   {type:"dessert",   title:"Dessert",   items:"4 small pieces of dark chocolate", cal:110,p:1,f:7,c:10, alts:ALT.des},
 ];
 
@@ -161,8 +175,22 @@ const STYLE = {
 };
 
 const statsEl=document.getElementById('stats');
+const carbcardEl=document.getElementById('carbcard');
+const carbsEl=document.getElementById('carbs');
 const mealsEl=document.getElementById('meals');
 const footEl=document.getElementById('foot');
+
+const CARB_KEYS=[['rice','🍚','rice'],['kumara','🍠','kumara'],['potato','🥔','potato']];
+
+function renderCarbs(){
+  const rows=MEALS.filter(m=>m.carbs);
+  if(!rows.length){ carbcardEl.style.display='none'; carbsEl.innerHTML=''; return; }
+  carbcardEl.style.display='block';
+  carbsEl.innerHTML=rows.map(m=>{
+    const vals=CARB_KEYS.filter(([k])=>m.carbs[k]!=null).map(([k,e,label])=>`${e} ${m.carbs[k]}g ${label}`);
+    return `<div class="carb-row"><span class="carb-meal">${m.title}</span><span class="carb-vals">${vals.join(' = ')}</span></div>`;
+  }).join('');
+}
 
 function macroLine(m){
   return `<span class="m-cal">${m.cal} cal</span> · <span class="m-pro">${m.p}g P</span> · <span class="m-fat">${m.f}g F</span> · <span class="m-carb">${m.c}g C</span>`;
@@ -174,6 +202,8 @@ function render(){
     <div class="stat pro"><b>${TARGETS.p}g</b><span>protein</span></div>
     <div class="stat fat"><b>${TARGETS.f}g</b><span>fat</span></div>
     <div class="stat carb"><b>${TARGETS.c}g</b><span>carbs</span></div>`;
+
+  renderCarbs();
 
   mealsEl.innerHTML=MEALS.map((m,i)=>{
     const s=STYLE[m.type];
