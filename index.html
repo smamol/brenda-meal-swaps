@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Brenda's Meals">
+<meta name="theme-color" content="#11161d">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<title>Brenda's Meal Swaps</title>
+<style>
+  :root{
+    --bg:#0f1318; --bg2:#151b22; --card:#1b232c; --card2:#212b35;
+    --line:#2a3540; --text:#eef2f6; --muted:#9aa7b4; --muted2:#6f7d8a;
+    --accent:#16a34a;
+    --cal:#5aa9ff; --pro:#33d17a; --fat:#ff9f43; --carb:#c084fc;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.45; padding-bottom:48px;
+  }
+  .wrap{max-width:520px; margin:0 auto; padding:0 16px}
+  header{padding:max(20px,env(safe-area-inset-top)) 0 6px}
+  h1{font-size:26px; font-weight:800; letter-spacing:-.02em; margin:8px 0 2px; display:flex; align-items:center; gap:10px}
+  .logo{width:34px; height:34px; border-radius:9px; flex:0 0 auto}
+  .sub{color:var(--muted); font-size:14px; margin:0 0 14px}
+
+  /* targets */
+  .targets{background:var(--bg2); border:1px solid var(--line); border-radius:18px; padding:16px; margin:2px 0 18px}
+  .targets h2{font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);
+    margin:0 0 12px; font-weight:700}
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
+  .stat{text-align:center}
+  .stat b{display:block; font-size:21px; font-weight:800; letter-spacing:-.02em}
+  .stat span{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+  .stat.cal b{color:var(--cal)} .stat.pro b{color:var(--pro)}
+  .stat.fat b{color:var(--fat)} .stat.carb b{color:var(--carb)}
+  .targets .note{font-size:12px; color:var(--muted2); margin:12px 0 0; line-height:1.5}
+
+  /* meal card */
+  .meal{background:var(--card); border:1px solid var(--line); border-radius:18px; margin-bottom:12px; overflow:hidden}
+  .meal-head{display:flex; align-items:flex-start; gap:13px; padding:15px 16px; cursor:default}
+  .meal.swappable .meal-head{cursor:pointer}
+  .icon{flex:0 0 auto; width:44px; height:44px; border-radius:13px; display:grid; place-items:center; font-size:22px}
+  .meal-body{flex:1; min-width:0}
+  .meal-kicker{display:flex; align-items:center; gap:8px; margin-bottom:3px}
+  .meal-kicker .name{font-size:16px; font-weight:750; letter-spacing:-.01em}
+  .badge{font-size:11px; font-weight:700; color:var(--accent); background:rgba(22,163,74,.13);
+    padding:2px 8px; border-radius:999px}
+  .badge.none{color:var(--muted2); background:transparent; padding:0; font-weight:600}
+  .items{font-size:14px; color:var(--text); opacity:.92}
+  .macros{font-size:12.5px; color:var(--muted); margin-top:5px; font-variant-numeric:tabular-nums}
+  .macros b{color:var(--muted)}
+  .dot{color:var(--cal)}
+  .chev{flex:0 0 auto; color:var(--muted2); transition:transform .2s; margin-top:11px; font-size:13px}
+  .meal.open .chev{transform:rotate(180deg)}
+
+  /* alternatives */
+  .alts{display:none; padding:0 16px 8px; border-top:1px solid var(--line)}
+  .meal.open .alts{display:block}
+  .alts-label{font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted2);
+    font-weight:700; padding:13px 2px 7px}
+  .alt{display:flex; gap:12px; align-items:flex-start; padding:11px 4px; border-bottom:1px solid var(--line)}
+  .alt:last-child{border-bottom:none}
+  .alt-em{flex:0 0 auto; font-size:21px; width:26px; text-align:center; margin-top:1px}
+  .alt-txt{flex:1; min-width:0}
+  .alt-name{font-size:14px; font-weight:600}
+  .alt-macros{font-size:12px; color:var(--muted); margin-top:2px; font-variant-numeric:tabular-nums}
+  .m-cal{color:var(--cal)} .m-pro{color:var(--pro)} .m-fat{color:var(--fat)} .m-carb{color:var(--carb)}
+
+  footer{color:var(--muted2); font-size:12px; text-align:center; padding:22px 8px; line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><img class="logo" src="icon.png" alt="">Brenda's Meals</h1>
+    <p class="sub">Macro-matched swaps for each meal in your nutrition guide.</p>
+  </header>
+</div>
+<div class="wrap">
+  <div class="targets">
+    <h2>Day Targets</h2>
+    <div class="stats" id="stats"></div>
+    <p class="note">From your nutrition guide — a slight calorie deficit while keeping the nutrition to support energy, bones &amp; strength. Tap any meal to swap it and stay on target.</p>
+  </div>
+  <div id="meals"></div>
+  <footer id="foot"></footer>
+</div>
+
+<script>
+/* ---------- day targets (verbatim from Brenda's guide) ---------- */
+const TARGETS = {cal:1690, p:121, f:64, c:141};
+
+/* ---------- shared alternative sets ---------- */
+const ALT = {
+  /* Breakfast 420 / 39P — guide's own WeetBix alternative */
+  bfast:[
+    {e:"🥣",n:"2 WeetBix + almond milk + 30g whey + 150g protein yoghurt + berries + sprinkle nuts/seeds",cal:425,p:39,f:10,c:46},
+  ],
+  /* Fruit snack 60 / 0P / 0F / 15C */
+  fruit:[
+    {e:"🍊",n:"1 orange",cal:62,p:1,f:0,c:15},
+    {e:"🍐",n:"1 pear",cal:60,p:0,f:0,c:16},
+    {e:"🥝",n:"2 kiwifruit",cal:60,p:1,f:0,c:14},
+  ],
+  /* Lunch 430 / 32P / 15F / 41C — chicken & rice bowl (avocado/feta ok) */
+  lunch:[
+    {e:"🐟",n:"150g white fish (raw) + 100g rice (cooked) + salad + ¼ avocado + 1 tsp olive oil",cal:430,p:31,f:14,c:40},
+    {e:"🥩",n:"130g lean beef (raw) + 130g kumara (cooked) + salad + ¼ avocado",cal:425,p:30,f:16,c:38},
+    {e:"🍤",n:"170g prawns + 110g rice (cooked) + salad + ¼ avocado + 1 tsp olive oil",cal:425,p:33,f:12,c:40},
+    {e:"🌯",n:"110g chicken (raw) + 1 wrap + salad + 25g hummus + ¼ avocado",cal:425,p:34,f:14,c:38},
+    {e:"🧀",n:"120g chicken (raw) + 100g rice (cooked) + salad + 30g feta",cal:425,p:34,f:13,c:38},
+  ],
+  /* Cheese + crackers snack 170 / 8P / 8F / 16C */
+  csnack:[
+    {e:"🧀",n:"20g cheese + 3 wholegrain crackers + cherry tomatoes",cal:170,p:8,f:8,c:16},
+    {e:"🥚",n:"1 boiled egg + 3 Vita Wheat + 5g butter",cal:175,p:8,f:10,c:14},
+    {e:"🥜",n:"2 rice cakes + 20g peanut butter",cal:180,p:7,f:11,c:16},
+  ],
+  /* Dinner 400 / 38P / 13F / 34C — chicken, kumara & salad (feta/avocado ok) */
+  dinner:[
+    {e:"🐟",n:"150g white fish (raw) + 150g kumara (cooked) + salad + 30g feta",cal:400,p:38,f:12,c:36},
+    {e:"🍤",n:"180g prawns + 160g kumara (cooked) + salad + 30g feta",cal:400,p:39,f:10,c:38},
+    {e:"🦃",n:"130g turkey mince (raw) + 150g kumara (cooked) + salad + ¼ avocado",cal:400,p:33,f:16,c:38},
+    {e:"🥚",n:"100g chicken (raw) + 2 eggs + 150g kumara (cooked) + salad",cal:415,p:38,f:14,c:37},
+    {e:"🥩",n:"130g lean beef (raw) + 130g kumara (cooked) + salad + herbs",cal:400,p:33,f:15,c:32},
+  ],
+  /* Dessert 110 / dark chocolate */
+  des:[
+    {e:"🍫",n:"20g dark chocolate (70%+)",cal:110,p:2,f:8,c:8},
+    {e:"🌰",n:"15g dark chocolate + 5 almonds",cal:105,p:2,f:8,c:7},
+    {e:"🍓",n:"3 squares dark chocolate + a handful of strawberries",cal:105,p:1,f:7,c:10},
+  ],
+};
+
+/* ---------- meals (single everyday plan, in guide order) ---------- */
+const MEALS = [
+  {type:"pre",       title:"Pre-Gym",   items:"1 banana  or  1 crumpet + honey", cal:105,p:1,f:0,c:27},
+  {type:"breakfast", title:"Breakfast", items:"40g homemade muesli + almond milk + 30g whey + 150g protein yoghurt + 100g blueberries", cal:420,p:39,f:9,c:45, alts:ALT.bfast},
+  {type:"snack",     title:"Snack",     items:"1 piece of fruit (e.g. apple)", cal:60,p:0,f:0,c:15, alts:ALT.fruit},
+  {type:"lunch",     title:"Lunch",     items:"120g chicken (raw) + 100g rice (cooked) + veg/salad + ¼ avocado + 1 tsp olive oil", cal:430,p:32,f:15,c:41, alts:ALT.lunch},
+  {type:"snack",     title:"Snack",     items:"20g slice of cheese + 4 Vita Wheat crackers", cal:170,p:8,f:8,c:16, alts:ALT.csnack},
+  {type:"dinner",    title:"Dinner",    items:"120g chicken (raw) + 150g kumara (cooked) + veg/salad + 30g feta + 1 tsp olive oil", cal:400,p:38,f:12,c:34, alts:ALT.dinner},
+  {type:"dessert",   title:"Dessert",   items:"4 small pieces of dark chocolate", cal:110,p:1,f:7,c:10, alts:ALT.des},
+];
+
+/* ---------- presentation ---------- */
+const STYLE = {
+  pre:      {em:"☕", bg:"#3a2a14", fg:"#ff9f43"},
+  breakfast:{em:"🥣", bg:"#15263a", fg:"#5aa9ff"},
+  snack:    {em:"🍎", bg:"#33183a", fg:"#c084fc"},
+  lunch:    {em:"🍽️", bg:"#1d2740", fg:"#818cf8"},
+  dinner:   {em:"🌙", bg:"#3a1820", fg:"#fb7185"},
+  dessert:  {em:"🍫", bg:"#2a1838", fg:"#d8b4fe"},
+};
+
+const statsEl=document.getElementById('stats');
+const mealsEl=document.getElementById('meals');
+const footEl=document.getElementById('foot');
+
+function macroLine(m){
+  return `<span class="m-cal">${m.cal} cal</span> · <span class="m-pro">${m.p}g P</span> · <span class="m-fat">${m.f}g F</span> · <span class="m-carb">${m.c}g C</span>`;
+}
+
+function render(){
+  statsEl.innerHTML=`
+    <div class="stat cal"><b>${TARGETS.cal}</b><span>cal</span></div>
+    <div class="stat pro"><b>${TARGETS.p}g</b><span>protein</span></div>
+    <div class="stat fat"><b>${TARGETS.f}g</b><span>fat</span></div>
+    <div class="stat carb"><b>${TARGETS.c}g</b><span>carbs</span></div>`;
+
+  mealsEl.innerHTML=MEALS.map((m,i)=>{
+    const s=STYLE[m.type];
+    const swap=m.alts&&m.alts.length;
+    const badge = swap ? `<span class="badge">${m.alts.length} swap${m.alts.length>1?'s':''}</span>`
+                       : `<span class="badge none">no swaps needed</span>`;
+    const alts = swap ? `<div class="alts"><div class="alts-label">Swap with</div>${
+        m.alts.map(a=>`<div class="alt"><div class="alt-em">${a.e}</div><div class="alt-txt">
+          <div class="alt-name">${a.n}</div>
+          <div class="alt-macros">${macroLine({cal:a.cal,p:a.p,f:a.f,c:a.c})}</div></div></div>`).join('')
+      }</div>` : '';
+    return `<div class="meal ${swap?'swappable':''}" data-i="${i}">
+      <div class="meal-head">
+        <div class="icon" style="background:${s.bg};color:${s.fg}">${s.em}</div>
+        <div class="meal-body">
+          <div class="meal-kicker"><span class="name">${m.title}</span>${badge}</div>
+          <div class="items">${m.items}</div>
+          <div class="macros">${macroLine(m)}</div>
+        </div>
+        ${swap?'<div class="chev">▼</div>':''}
+      </div>${alts}</div>`;
+  }).join('');
+
+  mealsEl.querySelectorAll('.meal.swappable .meal-head').forEach(h=>{
+    h.addEventListener('click',()=>h.parentElement.classList.toggle('open'));
+  });
+
+  footEl.innerHTML=`Macros are estimates to guide swaps — pick any alternative and you'll stay close to your day's target.<br>
+    Pre-gym &amp; breakfast kept as planned. Built from your nutrition guide.`;
+}
+
+render();
+</script>
+</body>
+</html>
