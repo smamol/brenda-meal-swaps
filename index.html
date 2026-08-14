@@ -109,7 +109,7 @@
 
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-08-14.1';
+const APP_VERSION = '2026-08-14.2';
 
 /* ---------- day targets (verbatim from Brenda's guide, Aug 2026 update) ---------- */
 const TARGETS = {cal:1690, p:123, f:55, c:159, fib:30};
@@ -132,11 +132,11 @@ const ALT = {
   ],
   /* Lunch 430 / 36P / 16F / 31C — guide's Protein × Carbs × Fats options */
   lunch:[
-    {e:"🐟",n:"80g fish (cooked) + 100g rice (cooked) + 2 cups salad + 55g feta",cal:394,p:33,f:15,c:31},
-    {e:"🥩",n:"100g lean beef (cooked) + 155g kumara (cooked) + 2 cups salad + 30g avocado",cal:404,p:34,f:15,c:31},
-    {e:"🌯",n:"90g chicken (cooked) + 60g wholemeal pita + 2 cups salad + 50g avocado",cal:402,p:34,f:15,c:32},
-    {e:"🍤",n:"120g prawns + 100g rice (cooked) + 2 cups salad + 55g avocado",cal:392,p:33,f:14,c:31},
-    {e:"🐖",n:"80g pork loin (cooked) + 150g kumara (cooked) + 2 cups salad + 40g feta",cal:399,p:33,f:15,c:31},
+    {e:"🐟",n:"95g fish (cooked) + 80g rice (cooked) + 2 cups salad + 40g feta",cal:343,p:34,f:11,c:25},
+    {e:"🥩",n:"105g lean beef (cooked) + 130g kumara (cooked) + 2 cups salad + 15g avocado",cal:359,p:35,f:12,c:26},
+    {e:"🌯",n:"95g chicken (cooked) + 50g wholemeal pita + 2 cups salad + 35g avocado",cal:351,p:34,f:11,c:27},
+    {e:"🍤",n:"125g prawns + 85g rice (cooked) + 2 cups salad + 45g avocado",cal:356,p:34,f:12,c:26},
+    {e:"🐖",n:"95g pork loin (cooked) + 125g kumara (cooked) + 2 cups salad + 20g feta",cal:348,p:34,f:11,c:26},
   ],
   /* Afternoon snack 170 cal — fruit + one of the guide's four options */
   csnack:[
@@ -146,11 +146,11 @@ const ALT = {
   ],
   /* Dinner 430 / 36P / 16F / 31C — guide's Protein × Carbs × Fats options */
   dinner:[
-    {e:"🐟",n:"95g fish (cooked) + 145g kumara (cooked) + 10g olive oil + 2 cups salad + 30g feta",cal:423,p:32,f:19,c:30},
-    {e:"🥩",n:"85g lean beef (cooked) + 260g potato (cooked) + 2 cups salad + 55g avocado",cal:437,p:32,f:19,c:30},
-    {e:"🍚",n:"95g chicken (cooked) + 95g rice (cooked) + 2 cups salad + 75g avocado",cal:436,p:32,f:20,c:29},
-    {e:"🐖",n:"95g pork loin (cooked) + 150g kumara (cooked) + 2 cups salad + 55g avocado",cal:433,p:32,f:19,c:30},
-    {e:"🍤",n:"90g prawns + 255g potato (cooked) + 10g olive oil + 2 cups salad + 30g feta",cal:420,p:32,f:18,c:30},
+    {e:"🐟",n:"125g fish (cooked) + 110g kumara (cooked) + 10g olive oil + 2 cups salad + 30g feta",cal:427,p:39,f:19,c:23},
+    {e:"🥩",n:"110g lean beef (cooked) + 195g potato (cooked) + 2 cups salad + 55g avocado",cal:449,p:38,f:21,c:23},
+    {e:"🍚",n:"125g chicken (cooked) + 75g rice (cooked) + 2 cups salad + 75g avocado",cal:451,p:40,f:21,c:24},
+    {e:"🐖",n:"120g pork loin (cooked) + 110g kumara (cooked) + 2 cups salad + 55g avocado",cal:443,p:39,f:21,c:23},
+    {e:"🍤",n:"125g prawns + 190g potato (cooked) + 15g olive oil + 2 cups salad + 30g feta",cal:465,p:39,f:24,c:23},
   ],
   /* Dessert 80–90 cal — the guide's other two options */
   des:[
@@ -176,9 +176,9 @@ const MEALS = [
   {type:"pre",       title:"Pre-Gym",   items:"1 medium banana", cal:114,p:1,f:0,c:25},
   {type:"breakfast", title:"Breakfast", items:"40g homemade muesli + unsweetened almond milk + 30g protein powder + 120g natural yoghurt + 100g blueberries", cal:442,p:41,f:12,c:38, alts:ALT.bfast},
   {type:"snack",     title:"Snack",     items:"1 medium apple (130g)", cal:66,p:0,f:0,c:14, alts:ALT.fruit},
-  {type:"lunch",     title:"Lunch",     items:"100g chicken (cooked) + 100g rice (cooked) + 2 cups salad + ¼ avocado", cal:395,p:33,f:15,c:31, alts:ALT.lunch, carbs:carbRow('rice',100)},
+  {type:"lunch",     title:"Lunch",     items:"105g chicken (cooked) + 85g rice (cooked) + 2 cups salad + 35g avocado", cal:350,p:34,f:11,c:26, alts:ALT.lunch, carbs:carbRow('rice',85)},
   {type:"snack",     title:"Snack",     items:"1 medium apple (130g) + 20g Edam + 15g rice crackers", cal:192,p:7,f:6,c:25, alts:ALT.csnack},
-  {type:"dinner",    title:"Dinner",    items:"100g chicken (cooked) + 150g kumara (cooked) + 1 tsp olive oil + 2 cups salad + ¼ avocado", cal:437,p:32,f:20,c:30, alts:ALT.dinner, carbs:carbRow('kumara',150)},
+  {type:"dinner",    title:"Dinner",    items:"125g chicken (cooked) + 110g kumara (cooked) + 1 tsp olive oil + 2 cups salad + 55g avocado", cal:448,p:39,f:21,c:23, alts:ALT.dinner, carbs:carbRow('kumara',110)},
   {type:"dessert",   title:"Dessert",   items:"1 mini Whittakers slab (15g)", cal:78,p:1,f:5,c:8, alts:ALT.des},
 ];
 
