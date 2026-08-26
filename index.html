@@ -40,7 +40,6 @@
   .stat span{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
   .stat.cal b{color:var(--cal)} .stat.pro b{color:var(--pro)}
   .stat.fat b{color:var(--fat)} .stat.carb b{color:var(--carb)}
-  .note{font-size:12px; color:var(--muted2); margin:12px 0 0; line-height:1.5}
 
   /* meal card */
   .meal{background:var(--card); border:1px solid var(--line); border-radius:18px; margin-bottom:12px; overflow:hidden}
@@ -93,7 +92,6 @@
   <div class="targets">
     <h2>Day Targets</h2>
     <div class="stats" id="stats"></div>
-    <p class="note" id="note"></p>
   </div>
   <div id="meals"></div>
   <footer id="foot"></footer>
@@ -101,7 +99,7 @@
 
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-08-26.1';
+const APP_VERSION = '2026-08-26.2';
 
 /* ---------- day targets (verbatim from the guide: "2. BL nutrition updates (Aug 2026)") ---------- */
 const TARGETS = {cal:1693, p:135, f:56, c:145, fib:28};
@@ -147,9 +145,9 @@ const FOODS = {
   choc_slab:      {l:'mini Whittakers slab',  e:'🍫', v:[520.8,7.6,30.6,56], u:{n:'mini Whittakers slab (15g)',p:'mini Whittakers slabs (15g)',g:15,step:0.5,max:2}},
   kefir:          {l:'kefir',                 e:'🥛', v:[48,3.5,2.1,3.8], max:250},
 
-  /* breakfast + base-only foods */
-  oats:           {l:'rolled oats',           e:'🥣', v:[360.9,12.2,7.24,56.7]},
-  mixed_seeds:    {l:'mixed seeds (LSA)',     e:'🌱', v:[525.8,19.4,45.7,2.49]},
+  /* breakfast + base-only foods — oats_seeds is per serve via nominal 100 g unit */
+  oats_seeds:     {l:'oats + nuts/seeds',     e:'🥣', v:[189.4,6.6,8.02,20.14], u:{n:'serve of 35g oats + 12g nuts/seeds',p:'serves of 35g oats + 12g nuts/seeds',g:100,step:1,max:1}},
+  muesli:         {l:'homemade muesli',       e:'🥣', v:[393.4,10.8,10.8,59.2], max:80},
   whey:           {l:'protein powder',        e:'💪', v:[372.8,78.8,4.1,4.2]},
   almond_milk:    {l:'almond milk',           e:'🥛', v:[17.0,0.54,1.4,0.2]},
   chobani_lite:   {l:'natural yoghurt (Chobani lite)', e:'🥛', v:[56,9.3,0.2,4.0]},
@@ -170,6 +168,9 @@ const POOLS = {
   fruit:   {b:3, keys:['banana','apple','mandarin','orange','pear','kiwifruit']},
   snackpack:{b:0, keys:['edam_snack','biltong','chickpeas_roasted','mixed_nuts']},
   dessert: {b:0, keys:['choc_slab','mandarin','kefir']},
+  /* the guide's one breakfast alternative: "(or 40g homemade muesli)" for the
+     oats + nuts/seeds pair — calorie-matched here, so it lands at 50g */
+  bmuesli: {b:0, keys:['oats_seeds','muesli']},
 };
 
 /* ---------- swap maths (shared with evals.js — keep pure) ---------- */
@@ -240,8 +241,7 @@ const MEALS = [
   {type:'pre', title:'Pre-Gym', ing:[
     {k:'banana', u:1, pool:'fruit'}]},
   {type:'breakfast', title:'Breakfast', ing:[
-    {k:'oats', g:35, t:'35g rolled oats'},
-    {k:'mixed_seeds', g:12, t:'1 Tbsp (12g) nuts/seeds'},
+    {k:'oats_seeds', u:1, t:'35g rolled oats + 1 Tbsp (12g) nuts/seeds', pool:'bmuesli'},
     {k:'almond_milk', ml:200, t:'unsweetened almond milk'},
     {k:'whey', g:30, t:'30g protein powder'},
     {k:'chobani_lite', g:120, t:'120g natural yoghurt (Chobani lite)'},
@@ -277,7 +277,6 @@ const STYLE = {
 const BASIS_NAME = {0:'same calories', 1:'same protein', 2:'same fat', 3:'same carbs'};
 
 const statsEl=document.getElementById('stats');
-const noteEl=document.getElementById('note');
 const mealsEl=document.getElementById('meals');
 const footEl=document.getElementById('foot');
 
@@ -310,12 +309,6 @@ function render(){
     <div class="stat pro"><b>${TARGETS.p}g</b><span>protein</span></div>
     <div class="stat fat"><b>${TARGETS.f}g</b><span>fat</span></div>
     <div class="stat carb"><b>${TARGETS.c}g</b><span>carbs</span></div>`;
-  const t = MEALS.reduce((a,meal)=>{
-    const m = mealMacros(meal);
-    return [a[0]+m[0], a[1]+m[1], a[2]+m[2], a[3]+m[3]];
-  }, [0,0,0,0]);
-  noteEl.innerHTML = `From your nutrition guide ("BL nutrition updates", Aug 2026 — the newer #2 plan). Targets shown verbatim; fibre target is ${TARGETS.fib}g/day, counted daily not per meal. The base day as written works out to ${R(t[0])} cal · ${R(t[1])}g P · ${R(t[2])}g F · ${R(t[3])}g C on NZ Food Composition data.`;
-
   mealsEl.innerHTML = MEALS.map((meal, mi)=>{
     const s = STYLE[meal.type];
     const mm = mealMacros(meal);
