@@ -54,6 +54,14 @@
   .macros{font-size:12.5px; color:var(--muted); margin-top:2px; font-variant-numeric:tabular-nums}
   .m-cal{color:var(--cal)} .m-pro{color:var(--pro)} .m-fat{color:var(--fat)} .m-carb{color:var(--carb)}
 
+  /* folded meals (breakfast is made as one bowl) */
+  .items{font-size:14px; color:var(--text); opacity:.92; margin-top:1px}
+  .meal.swappable .meal-head{cursor:pointer}
+  .meal-head .chev{margin-top:11px}
+  .meal.open .meal-head .chev{transform:rotate(180deg)}
+  .fold-swaps{display:none; padding:2px 16px 11px; border-top:1px solid var(--line)}
+  .meal.open .fold-swaps{display:block}
+
   /* ingredient rows */
   .ings{border-top:1px solid var(--line)}
   .ing{border-bottom:1px solid var(--line); padding:0 16px}
@@ -99,7 +107,7 @@
 
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-08-26.2';
+const APP_VERSION = '2026-08-26.3';
 
 /* ---------- day targets (verbatim from the guide: "2. BL nutrition updates (Aug 2026)") ---------- */
 const TARGETS = {cal:1693, p:135, f:56, c:145, fib:28};
@@ -240,7 +248,7 @@ function computeSwaps(ing){
 const MEALS = [
   {type:'pre', title:'Pre-Gym', ing:[
     {k:'banana', u:1, pool:'fruit'}]},
-  {type:'breakfast', title:'Breakfast', ing:[
+  {type:'breakfast', title:'Breakfast', folded:true, ing:[
     {k:'oats_seeds', u:1, t:'35g rolled oats + 1 Tbsp (12g) nuts/seeds', pool:'bmuesli'},
     {k:'almond_milk', ml:200, t:'unsweetened almond milk'},
     {k:'whey', g:30, t:'30g protein powder'},
@@ -312,6 +320,27 @@ function render(){
   mealsEl.innerHTML = MEALS.map((meal, mi)=>{
     const s = STYLE[meal.type];
     const mm = mealMacros(meal);
+    if (meal.folded){
+      const fSwaps = meal.ing.filter(i=>i.pool).map(ing=>({ing, swaps:computeSwaps(ing)})).filter(x=>x.swaps.length);
+      const badge = fSwaps.length ? `<span class="badge">${fSwaps.length} swappable</span>`
+                                  : `<span class="badge none">as planned</span>`;
+      const swapHtml = fSwaps.length ? `<div class="fold-swaps">${fSwaps.map(({ing, swaps})=>
+          `<div class="swaps-label">Swap for — ${BASIS_NAME[POOLS[ing.pool].b]} — instead of ${ingLabel(ing)}</div>${
+          swaps.map(sw=>`<div class="swap"><div class="swap-em">${sw.e}</div><div class="swap-txt">
+            <div class="swap-name">${sw.label}</div>
+            <div class="swap-d">${deltaLine(sw, POOLS[ing.pool].b)}</div></div></div>`).join('')}`).join('')
+        }</div>` : '';
+      return `<div class="meal ${fSwaps.length?'swappable':''}">
+        <div class="meal-head">
+          <div class="icon" style="background:${s.bg};color:${s.fg}">${s.em}</div>
+          <div class="meal-body">
+            <div class="meal-kicker"><span class="name">${meal.title}</span>${badge}</div>
+            <div class="items">${meal.ing.map(ingLabel).join(' + ')}</div>
+            <div class="macros">${macroLine(mm)}</div>
+          </div>
+          ${fSwaps.length?'<div class="chev">▼</div>':''}
+        </div>${swapHtml}</div>`;
+    }
     const rows = meal.ing.map((ing, ii)=>{
       const F = FOODS[ing.k];
       const swaps = ing.pool ? computeSwaps(ing) : [];
@@ -347,6 +376,9 @@ function render(){
   }).join('');
 
   mealsEl.querySelectorAll('.ing.swappable .ing-line').forEach(h=>{
+    h.addEventListener('click',()=>h.parentElement.classList.toggle('open'));
+  });
+  mealsEl.querySelectorAll('.meal.swappable .meal-head').forEach(h=>{
     h.addEventListener('click',()=>h.parentElement.classList.toggle('open'));
   });
 
