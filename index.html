@@ -106,7 +106,7 @@
 
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-08-26.6';
+const APP_VERSION = '2026-08-28.1';
 
 /* ---------- day targets (verbatim from the guide: "2. BL nutrition updates (Aug 2026)") ---------- */
 const TARGETS = {cal:1693, p:135, f:56, c:145, fib:28};
@@ -127,6 +127,9 @@ const FOODS = {
   pork_cooked:    {l:'pork loin (cooked)',    e:'🐖', v:[177.1,29.4,6.5,0.0],  rawP:23.2},  // pork_raw
   fish_cooked:    {l:'fish (cooked)',         e:'🐟', v:[115.7,25.2,1.5,0.0],  rawP:20.3},  // fish_raw
   prawns_cooked:  {l:'prawns (cooked)',       e:'🍤', v:[104.2,23.7,0.9,0.0]},
+  /* tinned tuna is eaten as it comes out of the tin — drained values, no raw weight.
+     NZ FOODfiles has no olive-oil-specific tuna, so this is its "canned in assorted oils" row. */
+  tuna_oil:       {l:'tinned tuna in olive oil (drained)', e:'🐟', v:[174.7,26.4,7.6,0.0], max:200},
 
   /* rawC = raw/dry available-carb per 100 g. Available-carb is conserved when a carb
      cooks (only water changes), so raw/dry g = cooked g × cooked-carb ÷ rawC.
@@ -178,7 +181,7 @@ const FOODS = {
    carb wraps beside rice, and biltong beside nuts), so those match calories
    and show the macro differences honestly. */
 const POOLS = {
-  protein: {b:1, keys:['chicken_cooked','beef_cooked','pork_cooked','fish_cooked','prawns_cooked']},
+  protein: {b:1, keys:['chicken_cooked','beef_cooked','pork_cooked','fish_cooked','prawns_cooked','tuna_oil']},
   carbs:   {b:0, keys:['rice_cooked','kumara_cooked','pumpkin_cooked','pasta_cooked','pita_wholemeal','spinach_wrap','farrahs_tortilla']},
   fats:    {b:0, keys:['avocado','feta','mayo_lite']},
   fruit:   {b:3, keys:['banana','apple','mandarin','orange','pear','kiwifruit']},
