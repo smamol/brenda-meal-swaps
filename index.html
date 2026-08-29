@@ -106,7 +106,7 @@
 
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-08-28.1';
+const APP_VERSION = '2026-08-29.1';
 
 /* ---------- day targets (verbatim from the guide: "2. BL nutrition updates (Aug 2026)") ---------- */
 const TARGETS = {cal:1693, p:135, f:56, c:145, fib:28};
@@ -138,6 +138,7 @@ const FOODS = {
   rice_cooked:    {l:'rice (cooked)',         e:'🍚', v:[132.4,2.78,0.4,28.7], rawC:79,   dry:true},
   kumara_cooked:  {l:'kumara (cooked)',       e:'🍠', v:[86.8,1.25,0.21,18.8], rawC:18.8},
   pumpkin_cooked: {l:'pumpkin (cooked)',      e:'🎃', v:[42.8,1.12,0.42,7.05], rawC:6.7},
+  potato_cooked:  {l:'potato (cooked)',       e:'🥔', v:[54.5,1.67,0.1,10.8], rawC:12.8, max:400},
   pasta_cooked:   {l:'pasta (cooked)',        e:'🍝', v:[135.3,5.05,0.8,25.4], rawC:72.5, dry:true},
   pita_wholemeal: {l:'wholemeal pita',        e:'🫓', v:[246.2,10.1,2.24,41.9], u:{n:'wholemeal pita',p:'wholemeal pitas',g:85}},
   spinach_wrap:   {l:'low carb spinach wrap', e:'🌯', v:[181.7,9.83,7.33,11.17], u:{n:'low carb spinach wrap (Rebel)',p:'low carb spinach wraps (Rebel)',g:60}},
@@ -182,7 +183,7 @@ const FOODS = {
    and show the macro differences honestly. */
 const POOLS = {
   protein: {b:1, keys:['chicken_cooked','beef_cooked','pork_cooked','fish_cooked','prawns_cooked','tuna_oil']},
-  carbs:   {b:0, keys:['rice_cooked','kumara_cooked','pumpkin_cooked','pasta_cooked','pita_wholemeal','spinach_wrap','farrahs_tortilla']},
+  carbs:   {b:0, keys:['rice_cooked','kumara_cooked','potato_cooked','pumpkin_cooked','pasta_cooked','pita_wholemeal','spinach_wrap','farrahs_tortilla']},
   fats:    {b:0, keys:['avocado','feta','mayo_lite']},
   fruit:   {b:3, keys:['banana','apple','mandarin','orange','pear','kiwifruit']},
   snackpack:{b:0, keys:['edam_snack','biltong','chickpeas_roasted','mixed_nuts']},
