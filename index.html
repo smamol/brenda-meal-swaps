@@ -106,7 +106,7 @@
 
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-08-29.1';
+const APP_VERSION = '2026-09-11.1';
 
 /* ---------- day targets (verbatim from the guide: "2. BL nutrition updates (Aug 2026)") ---------- */
 const TARGETS = {cal:1693, p:135, f:56, c:145, fib:28};
@@ -416,7 +416,7 @@ function render(){
     h.addEventListener('click',()=>h.parentElement.classList.toggle('open'));
   });
 
-  footEl.innerHTML = `All data from the NZ Food Composition Database<br>
+  footEl.innerHTML = `All data from the NZ Food Composition Database unless it's a specific brand<br>
     <span style="opacity:.6">v${APP_VERSION}</span>`;
 }
 
