@@ -130,7 +130,7 @@
 
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-09-11.2';
+const APP_VERSION = '2026-09-11.3';
 
 /* ---------- day targets (verbatim from the guide: "2. BL nutrition updates (Aug 2026)") ---------- */
 const TARGETS = {cal:1693, p:135, f:56, c:145, fib:28};
@@ -153,7 +153,8 @@ const FOODS = {
   prawns_cooked:  {l:'prawns (cooked)',       e:'🍤', v:[104.2,23.7,0.9,0.0]},
   /* tinned tuna is eaten as it comes out of the tin — drained values, no raw weight.
      NZ FOODfiles has no olive-oil-specific tuna, so this is its "canned in assorted oils" row. */
-  tuna_oil:       {l:'tinned tuna in olive oil (drained)', e:'🐟', v:[174.7,26.4,7.6,0.0], max:200},
+  /* pinned to Sealord Olive Oil Tuna Sensations label — Brenda's brand */
+  tuna_oil:       {l:'tinned tuna in olive oil (Sealord)', e:'🐟', v:[140,25.6,4.1,0.0], max:200},
 
   /* rawC = raw/dry available-carb per 100 g. Available-carb is conserved when a carb
      cooks (only water changes), so raw/dry g = cooked g × cooked-carb ÷ rawC.
@@ -164,7 +165,9 @@ const FOODS = {
   pumpkin_cooked: {l:'pumpkin (cooked)',      e:'🎃', v:[42.8,1.12,0.42,7.05], rawC:6.7},
   potato_cooked:  {l:'potato (cooked)',       e:'🥔', v:[54.5,1.67,0.1,10.8], rawC:12.8, max:400},
   pasta_cooked:   {l:'pasta (cooked)',        e:'🍝', v:[135.3,5.05,0.8,25.4], rawC:72.5, dry:true},
-  pita_wholemeal: {l:'wholemeal pita',        e:'🫓', v:[246.2,10.1,2.24,41.9], u:{n:'wholemeal pita',p:'wholemeal pitas',g:85}},
+  /* pinned to a Sourdough 6-Pita-Breads pack label (brand name not visible in
+     the photo Sandy sent — confirm manufacturer if it matters), 70g/pita */
+  pita_wholemeal: {l:'wholemeal pita (sourdough)', e:'🫓', v:[253.4,8.0,3.8,49.1], u:{n:'wholemeal pita',p:'wholemeal pitas',g:70}},
   spinach_wrap:   {l:'low carb spinach wrap', e:'🌯', v:[181.7,9.83,7.33,11.17], u:{n:'low carb spinach wrap (Rebel)',p:'low carb spinach wraps (Rebel)',g:60}},
   farrahs_tortilla:{l:"Farrah's low carb tortilla", e:'🌮', v:[241.4,8.0,7.7,24.7], u:{n:"Farrah's low carb tortilla",p:"Farrah's low carb tortillas",g:24}},
 
@@ -185,14 +188,19 @@ const FOODS = {
   chickpeas_roasted:{l:'roasted chickpeas',   e:'🫘', v:[320.3,22.4,5.0,38.7], max:60},
   mixed_nuts:     {l:'mixed nuts',            e:'🌰', v:[609.5,22.6,52.5,10.1], max:40},
 
-  /* dessert options */
-  choc_slab:      {l:'mini Whittakers slab',  e:'🍫', v:[520.8,7.6,30.6,56], u:{n:'mini Whittakers slab (15g)',p:'mini Whittakers slabs (15g)',g:15,step:0.5,max:2}},
+  /* dessert options — choc_slab pinned to Whittaker's Dark Ghana 72%, not
+     generic AFCD milk chocolate as before — Brenda's brand */
+  choc_slab:      {l:"mini Whittaker's Dark Ghana slab", e:'🍫', v:[554,11.4,34,51.1], u:{n:"mini Whittaker's Dark Ghana slab (15g)",p:"mini Whittaker's Dark Ghana slabs (15g)",g:15,step:0.5,max:2}},
   kefir:          {l:'kefir',                 e:'🥛', v:[48,3.5,2.1,3.8], max:250},
 
-  /* breakfast + base-only foods — oats_seeds is per serve via nominal 100 g unit */
+  /* breakfast + base-only foods — oats_seeds is per serve via nominal 100 g unit.
+     whey_isolate pinned to Go Good Whey Protein Isolate, Unflavoured — Brenda's
+     brand, same product as Sandy's app; keyed separately from the shared
+     "whey" reference so it doesn't affect Anna's app, which uses that key
+     for a different, generic product */
   oats_seeds:     {l:'oats + nuts/seeds',     e:'🥣', v:[189.4,6.6,8.02,20.14], u:{n:'serve of 35g oats + 12g nuts/seeds',p:'serves of 35g oats + 12g nuts/seeds',g:100,step:1,max:1}},
   muesli:         {l:'homemade muesli',       e:'🥣', v:[393.4,10.8,10.8,59.2], max:80},
-  whey:           {l:'protein powder',        e:'💪', v:[372.8,78.8,4.1,4.2]},
+  whey_isolate:   {l:'whey (Go Good Isolate, unflavoured)', e:'💪', v:[375,89,1,1]},
   almond_milk:    {l:'almond milk',           e:'🥛', v:[17.0,0.54,1.4,0.2]},
   chobani_lite:   {l:'natural yoghurt (Chobani lite)', e:'🥛', v:[56,9.3,0.2,4.0]},
   blueberries:    {l:'frozen blueberries',    e:'🫐', v:[50.4,0.63,0.3,9.3]},
@@ -309,7 +317,7 @@ const MEALS = [
   {type:'breakfast', title:'Breakfast', folded:true, ing:[
     {k:'oats_seeds', u:1, t:'35g rolled oats + 1 Tbsp (12g) nuts/seeds', pool:'bmuesli'},
     {k:'almond_milk', ml:200, t:'unsweetened almond milk'},
-    {k:'whey', g:30, t:'30g protein powder'},
+    {k:'whey_isolate', g:30},
     {k:'chobani_lite', g:120, t:'120g natural yoghurt (Chobani lite)'},
     {k:'blueberries', g:100, t:'100g frozen blueberries'}]},
   {type:'snack', title:'Snack', ing:[
