@@ -6,93 +6,117 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Meal Swaps">
-<meta name="theme-color" content="#11161d">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="icon" type="image/png" href="icon.png">
+<meta name="theme-color" content="#FBF2D5">
+<link rel="apple-touch-icon" href="apple-touch-icon-n8.png">
+<link rel="icon" type="image/png" href="icon-n8.png">
 <title>Meal Swaps</title>
 <style>
+  /* Licensed Nomad8 webfonts. Drop the files into fonts/ and these take over;
+     until then the stacks below fall back to the closest native faces. */
+  @font-face{font-family:"Feijoa";src:url("fonts/FeijoaTest-Medium.otf") format("opentype");font-weight:400 500;font-style:normal;font-display:swap}
+  @font-face{font-family:"Feijoa";src:url("fonts/FeijoaTest-MediumItalic.otf") format("opentype");font-weight:400 500;font-style:italic;font-display:swap}
+  @font-face{font-family:"Feijoa";src:url("fonts/FeijoaTest-Bold.otf") format("opentype");font-weight:700;font-style:normal;font-display:swap}
+  @font-face{font-family:"GT Walsheim";src:url("fonts/GT-Walsheim-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+  @font-face{font-family:"GT Walsheim";src:url("fonts/GT-Walsheim-Bold.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+
   :root{
-    --bg:#0f1318; --bg2:#151b22; --card:#1b232c; --card2:#212b35;
-    --line:#2a3540; --text:#eef2f6; --muted:#9aa7b4; --muted2:#6f7d8a;
-    --accent:#16a34a;
-    --cal:#5aa9ff; --pro:#33d17a; --fat:#ff9f43; --carb:#c084fc;
+    /* Nomad8 tokens */
+    --n8-ink:#082B35; --n8-ink-80:#3a5259; --n8-ink-60:#6b7d82; --n8-ink-20:#cdd4d6;
+    --n8-cream:#FBF2D5; --n8-paper:#FFFFFF; --n8-border:#E6E4DF;
+    --n8-green:#97C93D; --n8-orange:#E97A52; --n8-yellow:#F5B915;
+    --n8-wash-green:#DDECC6; --n8-wash-yellow:#FCF2D3; --n8-wash-pink:#FDEEEB;
+    --n8-wash-blue:#E0F3F7; --n8-wash-sage:#E9F5D9; --n8-wash-blush:#F9EAE7;
+    --n8-font-serif:"Feijoa","Iowan Old Style",Charter,Palatino,Georgia,serif;
+    --n8-font-ui:"GT Walsheim","Avenir Next",Avenir,-apple-system,"Helvetica Neue",Arial,sans-serif;
+
+    --bg:var(--n8-cream); --bg2:var(--n8-paper); --card:var(--n8-paper);
+    --line:var(--n8-border); --text:var(--n8-ink); --muted:var(--n8-ink-80); --muted2:var(--n8-ink-60);
+    --accent:var(--n8-ink);
+    /* macro colours — brand accents darkened to hold 4.5:1 on paper */
+    --cal:#1E6B7D; --pro:#5C8512; --fat:#C0521F; --carb:#8A6A08;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html,body{margin:0; padding:0}
   body{
     background:var(--bg); color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    line-height:1.45; padding-bottom:48px;
+    font-family:var(--n8-font-serif);
+    line-height:1.5; padding-bottom:48px;
   }
   .wrap{max-width:520px; margin:0 auto; padding:0 16px}
   header{padding:max(20px,env(safe-area-inset-top)) 0 6px}
-  h1{font-size:26px; font-weight:800; letter-spacing:-.02em; margin:8px 0 2px; display:flex; align-items:center; gap:10px}
-  .logo{width:34px; height:34px; border-radius:9px; flex:0 0 auto}
-  .sub{color:var(--muted); font-size:14px; margin:0 0 14px}
+  h1{font-family:var(--n8-font-serif); font-size:32px; font-weight:500; letter-spacing:0;
+    margin:8px 0 4px; display:flex; align-items:center; gap:12px}
+  .logo{width:34px; height:34px; flex:0 0 auto}
+  .sub{color:var(--muted); font-size:15px; margin:0 0 14px}
 
-  /* targets */
-  .targets{background:var(--bg2); border:1px solid var(--line); border-radius:18px; padding:16px; margin:2px 0 18px}
-  .targets h2{font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);
-    margin:0 0 12px; font-weight:700}
+  /* targets — flat sage panel */
+  .targets{background:var(--n8-wash-green); border:none; border-radius:0; padding:18px 18px 20px; margin:2px 0 18px}
+  .targets h2{font-family:var(--n8-font-serif); font-size:22px; text-transform:none; letter-spacing:0;
+    color:var(--n8-ink); margin:0 0 3px; font-weight:500}
+  .targets-sub{font-family:var(--n8-font-ui); font-size:12.5px; color:var(--muted); margin:0 0 14px}
   .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
   .stat{text-align:center}
-  .stat b{display:block; font-size:21px; font-weight:800; letter-spacing:-.02em}
-  .stat span{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+  .stat b{display:block; font-family:var(--n8-font-serif); font-size:26px; font-weight:700; letter-spacing:-.01em}
+  .stat span{font-family:var(--n8-font-ui); font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em}
   .stat.cal b{color:var(--cal)} .stat.pro b{color:var(--pro)}
   .stat.fat b{color:var(--fat)} .stat.carb b{color:var(--carb)}
 
-  /* meal card */
-  .meal{background:var(--card); border:1px solid var(--line); border-radius:18px; margin-bottom:12px; overflow:hidden}
+  /* meal card — flat paper rectangle, no shadow */
+  .meal{background:var(--card); border:1px solid var(--line); border-radius:0; margin-bottom:10px; overflow:hidden}
   .meal-head{display:flex; align-items:flex-start; gap:13px; padding:15px 16px}
-  .icon{flex:0 0 auto; width:44px; height:44px; border-radius:13px; display:grid; place-items:center; font-size:22px}
+  .icon{flex:0 0 auto; width:44px; height:44px; border-radius:0; display:grid; place-items:center; font-size:22px}
   .meal-body{flex:1; min-width:0}
-  .meal-kicker{display:flex; align-items:center; gap:8px; margin-bottom:3px}
-  .meal-kicker .name{font-size:16px; font-weight:750; letter-spacing:-.01em}
-  .badge{font-size:11px; font-weight:700; color:var(--accent); background:rgba(22,163,74,.13);
-    padding:2px 8px; border-radius:999px}
-  .badge.none{color:var(--muted2); background:transparent; padding:0; font-weight:600}
-  .macros{font-size:12.5px; color:var(--muted); margin-top:2px; font-variant-numeric:tabular-nums}
+  .meal-kicker{display:flex; align-items:center; gap:8px; margin-bottom:2px}
+  .meal-kicker .name{font-family:var(--n8-font-serif); font-size:20px; font-weight:500; letter-spacing:0}
+  .badge{font-family:var(--n8-font-ui); font-size:11px; font-weight:400; color:var(--n8-ink);
+    background:var(--n8-wash-green); padding:3px 10px; border-radius:999px}
+  .badge.none{color:var(--muted2); background:transparent; padding:0}
+  .macros{font-family:var(--n8-font-ui); font-size:12.5px; color:var(--muted); margin-top:3px; font-variant-numeric:tabular-nums}
   .m-cal{color:var(--cal)} .m-pro{color:var(--pro)} .m-fat{color:var(--fat)} .m-carb{color:var(--carb)}
 
   /* folded meals (breakfast is made as one bowl) */
-  .items{font-size:14px; color:var(--text); opacity:.92; margin-top:1px}
+  .items{font-size:15px; color:var(--n8-ink-80); margin-top:2px}
   .meal.swappable .meal-head{cursor:pointer}
   .meal-head .chev{margin-top:11px}
   .meal.open .meal-head .chev{transform:rotate(180deg)}
-  .fold-swaps{display:none; padding:2px 16px 11px; border-top:1px solid var(--line)}
+  .fold-swaps{display:none; padding:4px 16px 12px; border-top:1px solid var(--line)}
   .meal.open .fold-swaps{display:block}
 
   /* ingredient rows */
   .ings{border-top:1px solid var(--line)}
   .ing{border-bottom:1px solid var(--line); padding:0 16px}
   .ing:last-child{border-bottom:none}
-  .ing-line{display:flex; gap:11px; align-items:center; padding:10px 0}
+  .ing-line{display:flex; gap:11px; align-items:center; padding:11px 0}
   .ing.swappable .ing-line{cursor:pointer}
   .ing-em{flex:0 0 auto; font-size:19px; width:24px; text-align:center}
   .ing-txt{flex:1; min-width:0}
-  .ing-name{font-size:14px; font-weight:600}
-  .ing-sub{font-size:11.5px; color:var(--muted); margin-top:1px; font-variant-numeric:tabular-nums}
-  .chev{flex:0 0 auto; color:var(--muted2); transition:transform .2s; font-size:11px}
+  .ing-name{font-size:15.5px; font-weight:500}
+  .ing-sub{font-family:var(--n8-font-ui); font-size:11.5px; color:var(--muted); margin-top:2px; font-variant-numeric:tabular-nums}
+  .chev{flex:0 0 auto; color:var(--muted2); transition:transform .18s ease-out; font-size:11px}
   .ing.open .chev{transform:rotate(180deg)}
 
   /* swap list under an ingredient */
-  .swaps{display:none; padding:0 0 11px 35px}
+  .swaps{display:none; padding:0 0 12px 35px}
   .ing.open .swaps{display:block}
-  .swaps-label{font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted2);
-    font-weight:700; padding:1px 0 5px}
-  .swap{display:flex; gap:10px; align-items:flex-start; padding:7px 0; border-top:1px dashed var(--line)}
+  .swaps-label{font-family:var(--n8-font-ui); font-size:10.5px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--muted2); font-weight:700; padding:2px 0 6px}
+  .swap{display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-top:1px solid var(--line)}
   .swap-em{flex:0 0 auto; font-size:17px; width:22px; text-align:center}
   .swap-txt{flex:1; min-width:0}
-  .swap-name{font-size:13.5px; font-weight:600}
-  .swap-d{font-size:11.5px; color:var(--muted); margin-top:1px; font-variant-numeric:tabular-nums}
+  .swap-name{font-size:14.5px; font-weight:500}
+  .swap-d{font-family:var(--n8-font-ui); font-size:11.5px; color:var(--muted); margin-top:2px; font-variant-numeric:tabular-nums}
 
-  footer{color:var(--muted2); font-size:12px; text-align:center; padding:22px 8px; line-height:1.6}
+  a{color:var(--n8-ink); text-decoration:underline; text-underline-offset:3px}
+  a:hover{color:var(--pro)}
+
+  footer{font-family:var(--n8-font-ui); color:var(--muted2); font-size:12px; text-align:center; padding:22px 8px; line-height:1.6}
+  footer .n8mark{display:block; width:74px; margin:0 auto 12px; opacity:.85}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1><img class="logo" src="icon.png" alt="">Meal Swaps</h1>
+    <h1><img class="logo" src="icon-n8.png" alt="">Meal Swaps</h1>
   </header>
 </div>
 <div class="wrap">
@@ -106,7 +130,7 @@
 
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-09-11.1';
+const APP_VERSION = '2026-09-11.2';
 
 /* ---------- day targets (verbatim from the guide: "2. BL nutrition updates (Aug 2026)") ---------- */
 const TARGETS = {cal:1693, p:135, f:56, c:145, fib:28};
@@ -309,12 +333,12 @@ const MEALS = [
 
 /* ---------- presentation ---------- */
 const STYLE = {
-  pre:      {em:"☕", bg:"#3a2a14", fg:"#ff9f43"},
-  breakfast:{em:"🥣", bg:"#15263a", fg:"#5aa9ff"},
-  snack:    {em:"🍎", bg:"#33183a", fg:"#c084fc"},
-  lunch:    {em:"🍽️", bg:"#1d2740", fg:"#818cf8"},
-  dinner:   {em:"🌙", bg:"#3a1820", fg:"#fb7185"},
-  dessert:  {em:"🍫", bg:"#2a1838", fg:"#d8b4fe"},
+  pre:      {em:"☕", bg:"#FCF2D3", fg:"#082B35"},
+  breakfast:{em:"🥣", bg:"#E0F3F7", fg:"#082B35"},
+  snack:    {em:"🍎", bg:"#FDEEEB", fg:"#082B35"},
+  lunch:    {em:"🍽️", bg:"#DDECC6", fg:"#082B35"},
+  dinner:   {em:"🌙", bg:"#F9EAE7", fg:"#082B35"},
+  dessert:  {em:"🍫", bg:"#FBF2D5", fg:"#082B35"},
 };
 const BASIS_NAME = {0:'same calories', 1:'same protein', 2:'same fat', 3:'same carbs'};
 
@@ -416,7 +440,8 @@ function render(){
     h.addEventListener('click',()=>h.parentElement.classList.toggle('open'));
   });
 
-  footEl.innerHTML = `All data from the NZ Food Composition Database unless it's a specific brand<br>
+  footEl.innerHTML = `<img class="n8mark" src="nomad-logo.png" alt="Nomad8">
+    All data from the NZ Food Composition Database unless it's a specific brand<br>
     <span style="opacity:.6">v${APP_VERSION}</span>`;
 }
 
