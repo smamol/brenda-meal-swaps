@@ -130,7 +130,7 @@
 
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-09-11.3';
+const APP_VERSION = '2026-09-12.1';
 
 /* ---------- day targets (verbatim from the guide: "2. BL nutrition updates (Aug 2026)") ---------- */
 const TARGETS = {cal:1693, p:135, f:56, c:145, fib:28};
@@ -190,6 +190,13 @@ const FOODS = {
 
   /* dessert options — choc_slab pinned to Whittaker's Dark Ghana 72%, not
      generic AFCD milk chocolate as before — Brenda's brand */
+  /* whole-snack alternative — the blueberry protein slice Sandy bakes, derived over
+     the finished 872 g tray: 100g raw egg (NZ G1016) + 30g Go Good whey isolate
+     + 4g vanilla extract (AFCD F009350) + 125ml almond milk (NZ C1127) + 180g rolled
+     oats (NZ E1075) + 40g chia seed (NZ Q1026) + 200g blueberries (NZ L1050) + 100g
+     dark chocolate 70-84% cocoa (NZ W1026), no added sweetener. Same bake and same
+     pin as Sandy's app; Brenda eats it from the same tray */
+  blueberry_slice:{l:'blueberry protein slice', e:'🫐', v:[202.7,9.35,8.93,18.11], max:250},
   choc_slab:      {l:"mini Whittaker's Dark Ghana slab", e:'🍫', v:[554,11.4,34,51.1], u:{n:"mini Whittaker's Dark Ghana slab (15g)",p:"mini Whittaker's Dark Ghana slabs (15g)",g:15,step:0.5,max:2}},
   kefir:          {l:'kefir',                 e:'🥛', v:[48,3.5,2.1,3.8], max:250},
 
@@ -310,6 +317,21 @@ function computeSwaps(ing){
   return out;
 }
 
+/* Whole-meal alternatives (meal.mealSwaps): curated combos that replace the
+   entire snack, calorie-matched to the meal within the same flat 10% rule,
+   other macros shown as honest differences. Ported from Sandy's app 2026-09-12
+   for the blueberry protein slice — Brenda's plan had no whole-meal swaps
+   before, only ingredient swaps. */
+function mealSwapAlts(meal){
+  if (!meal.mealSwaps) return [];
+  const base = mealMacros(meal);
+  return meal.mealSwaps.map(ms => {
+    const m = [0,0,0,0];
+    for (const p of ms.parts){ const v = ingMacros(p); for (let i=0;i<4;i++) m[i]+=v[i]; }
+    return {e: ms.e, label: ms.parts.map(ingLabel).join(' + '), m, d: m.map((x,i)=>x-base[i]), parts: ms.parts};
+  });
+}
+
 /* ---------- meals — the guide's plan, as written (single day) ---------- */
 const MEALS = [
   {type:'pre', title:'Pre-Gym', ing:[
@@ -329,14 +351,26 @@ const MEALS = [
     {k:'avocado', g:50, t:'¼ avocado (50g)', pool:'fats'}]},
   {type:'snack', title:'Snack', ing:[
     {k:'apple', u:1, pool:'fruit'},
-    {k:'edam_snack', u:1, pool:'snackpack'}]},
+    {k:'edam_snack', u:1, pool:'snackpack'}],
+    /* blueberry slice, added 2026-09-12 — lands on all four macros exactly */
+    mealSwaps:[
+      {e:'🫐', parts:[{k:'blueberry_slice', g:70}, {k:'banana', u:0.5}]}
+    ]},
   {type:'dinner', title:'Dinner', ing:[
     {k:'chicken_cooked', g:120, pool:'protein'},
     {k:'kumara_cooked', g:150, pool:'carbs'},
     {k:'salad', g:140, t:'2 cups salad / vegetables'},
     {k:'avocado', g:50, t:'¼ avocado (50g)', pool:'fats'}]},
   {type:'dessert', title:'Dessert', ing:[
-    {k:'choc_slab', u:1, pool:'dessert'}]},
+    {k:'choc_slab', u:1, pool:'dessert'}],
+    /* blueberry slice, added 2026-09-12 — trades 2g of fat for 2g of protein
+       against her 135g protein target, so it beats the chocolate it replaces.
+       The 1-apple snack gets no slice swap: a plain apple is pure carbohydrate
+       and the slice is protein- and fat-dense, so nothing calorie-matched lands
+       near it on a 66 cal card. */
+    mealSwaps:[
+      {e:'🫐', parts:[{k:'blueberry_slice', g:40}]}
+    ]},
 ];
 
 /* ---------- presentation ---------- */
@@ -375,6 +409,11 @@ function deltaLine(swap, basis){
     parts.push(`<span class="${cls}">${d > 0 ? '+' : '−'}${Math.abs(d)}${unit}${ltr}</span>`);
   }
   return parts.length > 1 || Math.abs(db) >= 1 ? parts.join(' · ') : parts[0] + ' · near-exact match';
+}
+function swapRows(swaps, basis){
+  return swaps.map(sw=>`<div class="swap"><div class="swap-em">${sw.e}</div><div class="swap-txt">
+    <div class="swap-name">${sw.label}</div>
+    <div class="swap-d">${deltaLine(sw, basis)}</div></div></div>`).join('');
 }
 
 function render(){
@@ -428,17 +467,21 @@ function render(){
         </div>${swapHtml}</div>`;
     }).join('');
     const nSwap = meal.ing.filter(i=>i.pool && computeSwaps(i).length).length;
+    const mAlts = mealSwapAlts(meal);
     const badge = nSwap ? `<span class="badge">${nSwap} swappable</span>`
                         : `<span class="badge none">as planned</span>`;
-    return `<div class="meal">
+    const msHtml = mAlts.length ? `<div class="fold-swaps">
+        <div class="swaps-label">Swap the whole snack — ${BASIS_NAME[0]}</div>${swapRows(mAlts, 0)}</div>` : '';
+    return `<div class="meal ${mAlts.length?'swappable':''}">
       <div class="meal-head">
         <div class="icon" style="background:${s.bg};color:${s.fg}">${s.em}</div>
         <div class="meal-body">
           <div class="meal-kicker"><span class="name">${meal.title}</span>${badge}</div>
           <div class="macros">${macroLine(mm)}</div>
         </div>
+        ${mAlts.length?'<div class="chev">▼</div>':''}
       </div>
-      <div class="ings">${rows}</div></div>`;
+      <div class="ings">${rows}</div>${msHtml}</div>`;
   }).join('');
 
   mealsEl.querySelectorAll('.ing.swappable .ing-line').forEach(h=>{
