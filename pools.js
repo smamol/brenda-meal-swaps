@@ -14,15 +14,16 @@ const POOLS = {
   protein: {b:1, keys:['chicken_raw','fish_raw','salmon_raw','beef_raw','pork_raw',
                        'chicken_cooked','fish_cooked','salmon_cooked','beef_cooked','pork_cooked',
                        'prawns_cooked','tuna_water','egg','lentils_cooked']},
-  /* Farrah's tortillas sit here, not in bread: Sandy wants them only as a
-     lunch or dinner swap, never for a snack (2026-10-20), and only lunches and
-     dinners carry these carbs */
-  starch:  {b:3, keys:['rice_cooked','pasta_cooked','couscous','kumara_cooked','potato_cooked','pumpkin_cooked','farrahs_tortilla']},
+  /* wraps and Farrah's tortillas sit here, not in bread: Sandy wants them only
+     as a lunch or dinner swap, never for a snack or around training
+     (2026-10-20), and only lunches and dinners carry these carbs */
+  starch:  {b:3, keys:['rice_cooked','pasta_cooked','couscous','kumara_cooked','potato_cooked','pumpkin_cooked',
+                       'wrap','spinach_wrap','farrahs_tortilla']},
   /* English muffin dropped 2026-09-12 — Sandy doesn't like them ("remove them
      from my list"), so it leaves every bread swap, not just the slice ones.
-     Brenda's pita and wraps moved here from her old carbs group. */
-  bread:   {b:3, keys:['bagel','crumpet','vogels','fruit_bread','rice_cake','corn_thin','wrap',
-                       'pita_wholemeal','spinach_wrap']},
+     Brenda's pita moved here from her old carbs group; all wraps went to
+     starch (lunch and dinner only). */
+  bread:   {b:3, keys:['bagel','crumpet','vogels','fruit_bread','rice_cake','corn_thin','pita_wholemeal']},
   /* spreads for rice cakes and crackers (was Sandy's "fats"). Sunflower seeds,
      pumpkin seeds and LSA (mixed_seeds — Linseed/Sunflower/Almond) dropped
      2026-09: loose seeds don't work as a spread ("just doesn't taste good") */

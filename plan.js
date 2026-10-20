@@ -17,7 +17,8 @@ const PLAN = {
   /* starting dislikes, set 2026-10-20 so her swap lists stay as they were when
      the groups became shared (test/dislikes.js) */
   dislikes: ['blueberries', 'strawberries', 'raspberries', 'salmon_cooked', 'tuna_water', 'egg',
-             'lentils_cooked', 'couscous', 'pumpkin_seeds', 'sunflower_seeds', 'mixed_seeds', 'hummus'],
+             'lentils_cooked', 'couscous', 'pumpkin_seeds', 'sunflower_seeds', 'mixed_seeds', 'hummus',
+             'wrap'],   /* Sandy's large wraps joined starch 2026-10-20; not on Brenda's old list */
   /* her own products: they join the named group for her alone */
   brands: [
     {k:'tuna_oil', pool:'protein'},     // Sealord Olive Oil Tuna Sensations
