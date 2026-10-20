@@ -49,6 +49,18 @@
   .logo{width:34px; height:34px; flex:0 0 auto}
   .sub{color:var(--muted); font-size:15px; margin:0 0 14px}
 
+  /* tabs — Nomad8 pill buttons */
+  .tabs{display:flex; gap:8px; overflow-x:auto; padding:4px 16px 16px; margin:0 -16px; scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:0 0 auto; border:1px solid var(--n8-ink-20); background:transparent; color:var(--n8-ink);
+    font-family:var(--n8-font-ui); padding:9px 20px; border-radius:999px; font-size:14px; font-weight:400;
+    white-space:nowrap; cursor:pointer; transition:background .18s ease-out, border-color .18s ease-out}
+  .tab .kc{display:block; font-size:11px; font-weight:400; color:var(--muted2); margin-top:1px}
+  .tab.archived{opacity:.5}
+  .tab.archived.active{opacity:1}
+  .tab.active{background:var(--n8-ink); border-color:var(--n8-ink); color:#fff}
+  .tab.active .kc{color:rgba(255,255,255,.8)}
+
   /* targets — flat sage panel */
   .targets{background:var(--n8-wash-green); border:none; border-radius:0; padding:18px 18px 20px; margin:2px 0 18px}
   .targets h2{font-family:var(--n8-font-serif); font-size:22px; text-transform:none; letter-spacing:0;
@@ -119,264 +131,42 @@
     <h1><img class="logo" src="icon-n8.png" alt="">Meal Swaps</h1>
   </header>
 </div>
+<div class="wrap"><div class="tabs" id="tabs"></div></div>
 <div class="wrap">
   <div class="targets">
-    <h2>Day Targets</h2>
+    <h2 id="targets-title">Day Targets</h2>
+    <p class="targets-sub" id="targets-sub"></p>
     <div class="stats" id="stats"></div>
   </div>
   <div id="meals"></div>
   <footer id="foot"></footer>
 </div>
 
+<!-- One page for every client (step 2, 2026-10-20). The shared library, swap
+     groups and swap maths live in their own files so evals.js runs the same code
+     the page does; plan.js is this site's person (deploy.js copies plans/<id>.js).
+     All are plain scripts, so the page works offline as before.
+     ?v= must match APP_VERSION below. -->
+<script src="foods.js?v=2026-10-20.2"></script>
+<script src="pools.js?v=2026-10-20.2"></script>
+<script src="engine.js?v=2026-10-20.2"></script>
+<script src="plan.js?v=2026-10-20.2"></script>
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-09-12.1';
+const APP_VERSION = '2026-10-20.2';
 
-/* ---------- day targets (verbatim from the guide: "2. BL nutrition updates (Aug 2026)") ---------- */
-const TARGETS = {cal:1693, p:135, f:56, c:145, fib:28};
-
-/* ---------- food library ----------
-   v = [kcal, protein g, fat g, available carb g] per 100 g, from the NZ Food
-   Composition Database (product label where NZ has no entry) — pinned by
-   nz-reference.json in ../mealapp, verified by evals.js. Never guess.
-   u = unit foods: n/p name, g grams per unit, step rounding, min/max counts.
-   ml = measured in millilitres. max = largest sensible swap portion in grams. */
-const FOODS = {
-  /* rawP = raw protein per 100 g, from the pinned nz-reference *_raw entries.
-     Raw weight is derived, not guessed: protein is conserved when meat is cooked
-     (water/fat leave, protein stays), so raw g = cooked g × cooked-protein ÷ rawP.
-     Prawns have no raw entry (bought cooked), so they show cooked only. */
-  chicken_cooked: {l:'chicken (cooked)',      e:'🍗', v:[138.9,28.2,2.73,0.0], rawP:22.5},  // chicken_raw
-  beef_cooked:    {l:'lean beef (cooked)',    e:'🥩', v:[188.8,30.2,7.48,0.0], rawP:20.4},  // beef_raw
-  pork_cooked:    {l:'pork loin (cooked)',    e:'🐖', v:[177.1,29.4,6.5,0.0],  rawP:23.2},  // pork_raw
-  fish_cooked:    {l:'fish (cooked)',         e:'🐟', v:[115.7,25.2,1.5,0.0],  rawP:20.3},  // fish_raw
-  prawns_cooked:  {l:'prawns (cooked)',       e:'🍤', v:[104.2,23.7,0.9,0.0]},
-  /* tinned tuna is eaten as it comes out of the tin — drained values, no raw weight.
-     NZ FOODfiles has no olive-oil-specific tuna, so this is its "canned in assorted oils" row. */
-  /* pinned to Sealord Olive Oil Tuna Sensations label — Brenda's brand */
-  tuna_oil:       {l:'tinned tuna in olive oil (Sealord)', e:'🐟', v:[140,25.6,4.1,0.0], max:200},
-
-  /* rawC = raw/dry available-carb per 100 g. Available-carb is conserved when a carb
-     cooks (only water changes), so raw/dry g = cooked g × cooked-carb ÷ rawC.
-     dry:true → weighed dry as a grain (rice, pasta); else raw veg (kumara, pumpkin).
-     kumara/pumpkin: NZ FoodFiles raw entries. rice/pasta: NZ retail labels. */
-  rice_cooked:    {l:'rice (cooked)',         e:'🍚', v:[132.4,2.78,0.4,28.7], rawC:79,   dry:true},
-  kumara_cooked:  {l:'kumara (cooked)',       e:'🍠', v:[86.8,1.25,0.21,18.8], rawC:18.8},
-  pumpkin_cooked: {l:'pumpkin (cooked)',      e:'🎃', v:[42.8,1.12,0.42,7.05], rawC:6.7},
-  potato_cooked:  {l:'potato (cooked)',       e:'🥔', v:[54.5,1.67,0.1,10.8], rawC:12.8, max:400},
-  pasta_cooked:   {l:'pasta (cooked)',        e:'🍝', v:[135.3,5.05,0.8,25.4], rawC:72.5, dry:true},
-  /* pinned to a Sourdough 6-Pita-Breads pack label (brand name not visible in
-     the photo Sandy sent — confirm manufacturer if it matters), 70g/pita */
-  pita_wholemeal: {l:'wholemeal pita (sourdough)', e:'🫓', v:[253.4,8.0,3.8,49.1], u:{n:'wholemeal pita',p:'wholemeal pitas',g:70}},
-  spinach_wrap:   {l:'low carb spinach wrap', e:'🌯', v:[181.7,9.83,7.33,11.17], u:{n:'low carb spinach wrap (Rebel)',p:'low carb spinach wraps (Rebel)',g:60}},
-  farrahs_tortilla:{l:"Farrah's low carb tortilla", e:'🌮', v:[241.4,8.0,7.7,24.7], u:{n:"Farrah's low carb tortilla",p:"Farrah's low carb tortillas",g:24}},
-
-  avocado:        {l:'avocado',               e:'🥑', v:[218.0,1.78,22.7,0.08], max:110},
-  feta:           {l:'feta',                  e:'🧀', v:[279.6,16.9,23.4,1.1], max:60},
-  mayo_lite:      {l:'lite mayo / Perinaise', e:'🥄', v:[284.4,0.52,21.2,23.2], max:45},
-
-  banana:         {l:'banana',                e:'🍌', v:[94.9,1.03,0.3,20.8], u:{n:'medium banana',p:'medium bananas',g:120}},
-  apple:          {l:'apple',                 e:'🍎', v:[50.9,0.21,0.3,10.7], u:{n:'medium apple',p:'medium apples',g:130}},
-  mandarin:       {l:'mandarin',              e:'🍊', v:[40.9,0.91,0.2,8.11], u:{n:'mandarin',g:70,max:4}},
-  orange:         {l:'orange',                e:'🍊', v:[41.3,1.06,0.05,8.17], u:{n:'orange',g:130}},
-  pear:           {l:'pear',                  e:'🍐', v:[50.9,0.37,0.3,10.0], u:{n:'pear',g:150}},
-  kiwifruit:      {l:'kiwifruit',             e:'🥝', v:[55.9,0.73,0.57,10.7], u:{n:'kiwifruit',p:'kiwifruit',g:75}},
-
-  /* afternoon-snack options — edam_snack is per packet via nominal 100 g unit */
-  edam_snack:     {l:'Edam + rice crackers snack packet', e:'🧀', v:[125.5,6.6,5.94,11.35], u:{n:'Edam + rice crackers snack packet',p:'Edam + rice crackers snack packets',g:100,step:0.5,max:2}},
-  biltong:        {l:'biltong / bitemeat',    e:'🥩', v:[315,58.0,7.9,2.7], max:60},
-  chickpeas_roasted:{l:'roasted chickpeas',   e:'🫘', v:[320.3,22.4,5.0,38.7], max:60},
-  mixed_nuts:     {l:'mixed nuts',            e:'🌰', v:[609.5,22.6,52.5,10.1], max:40},
-
-  /* dessert options — choc_slab pinned to Whittaker's Dark Ghana 72%, not
-     generic AFCD milk chocolate as before — Brenda's brand */
-  /* whole-snack alternative — the blueberry protein slice Sandy bakes, derived over
-     the finished 872 g tray: 100g raw egg (NZ G1016) + 30g Go Good whey isolate
-     + 4g vanilla extract (AFCD F009350) + 125ml almond milk (NZ C1127) + 180g rolled
-     oats (NZ E1075) + 40g chia seed (NZ Q1026) + 200g blueberries (NZ L1050) + 100g
-     dark chocolate 70-84% cocoa (NZ W1026), no added sweetener. Same bake and same
-     pin as Sandy's app; Brenda eats it from the same tray */
-  blueberry_slice:{l:'blueberry protein slice', e:'🫐', v:[202.7,9.35,8.93,18.11], max:250},
-  choc_slab:      {l:"mini Whittaker's Dark Ghana slab", e:'🍫', v:[554,11.4,34,51.1], u:{n:"mini Whittaker's Dark Ghana slab (15g)",p:"mini Whittaker's Dark Ghana slabs (15g)",g:15,step:0.5,max:2}},
-  kefir:          {l:'kefir',                 e:'🥛', v:[48,3.5,2.1,3.8], max:250},
-
-  /* breakfast + base-only foods — oats_seeds is per serve via nominal 100 g unit.
-     whey_isolate pinned to Go Good Whey Protein Isolate, Unflavoured — Brenda's
-     brand, same product as Sandy's app; keyed separately from the shared
-     "whey" reference so it doesn't affect Anna's app, which uses that key
-     for a different, generic product */
-  oats_seeds:     {l:'oats + nuts/seeds',     e:'🥣', v:[189.4,6.6,8.02,20.14], u:{n:'serve of 35g oats + 12g nuts/seeds',p:'serves of 35g oats + 12g nuts/seeds',g:100,step:1,max:1}},
-  muesli:         {l:'homemade muesli',       e:'🥣', v:[393.4,10.8,10.8,59.2], max:80},
-  whey_isolate:   {l:'whey (Go Good Isolate, unflavoured)', e:'💪', v:[375,89,1,1]},
-  almond_milk:    {l:'almond milk',           e:'🥛', v:[17.0,0.54,1.4,0.2]},
-  chobani_lite:   {l:'natural yoghurt (Chobani lite)', e:'🥛', v:[56,9.3,0.2,4.0]},
-  blueberries:    {l:'frozen blueberries',    e:'🫐', v:[50.4,0.63,0.3,9.3]},
-  salad:          {l:'salad',                 e:'🥗', v:[21.3,1.94,0.31,1.8]},
-};
-
-/* ---------- swap pools ----------
-   b = what a swap must hold, as an index into [cal,P,F,C]: 0 calories,
-   1 protein, 2 fat, 3 carbs. The guide's protein slot is protein-equivalent;
-   its carb, fats, snack and dessert slots are calorie-slotted (it lists low
-   carb wraps beside rice, and biltong beside nuts), so those match calories
-   and show the macro differences honestly. */
-const POOLS = {
-  protein: {b:1, keys:['chicken_cooked','beef_cooked','pork_cooked','fish_cooked','prawns_cooked','tuna_oil']},
-  carbs:   {b:0, keys:['rice_cooked','kumara_cooked','potato_cooked','pumpkin_cooked','pasta_cooked','pita_wholemeal','spinach_wrap','farrahs_tortilla']},
-  fats:    {b:0, keys:['avocado','feta','mayo_lite']},
-  fruit:   {b:3, keys:['banana','apple','mandarin','orange','pear','kiwifruit']},
-  snackpack:{b:0, keys:['edam_snack','biltong','chickpeas_roasted','mixed_nuts']},
-  dessert: {b:0, keys:['choc_slab','mandarin','kefir']},
-  /* the guide's one breakfast alternative: "(or 40g homemade muesli)" for the
-     oats + nuts/seeds pair — calorie-matched here, so it lands at 50g */
-  bmuesli: {b:0, keys:['oats_seeds','muesli']},
-};
-
-/* ---------- swap maths (shared with evals.js — keep pure) ---------- */
-const scaleV = (v,g) => v.map(x => x*g/100);
-function ingAmountG(ing){
-  if (ing.g != null) return ing.g;
-  if (ing.ml != null) return ing.ml;
-  return ing.u * FOODS[ing.k].u.g;
-}
-function ingMacros(ing){ return scaleV(FOODS[ing.k].v, ingAmountG(ing)); }
-function mealMacros(meal){
-  const t = [0,0,0,0];
-  for (const ing of meal.ing){ const m = ingMacros(ing); for (let i=0;i<4;i++) t[i]+=m[i]; }
-  return t;
-}
-function fmtU(u){
-  const w = Math.floor(u), f = u - w;
-  return (w ? w : '') + (f >= 0.25 ? '½' : '') || String(w);
-}
-function unitLabel(F, u){ return `${fmtU(u)} ${u > 1 ? (F.u.p || F.u.n + 's') : F.u.n}`; }
-/* raw / dry weight, derived not guessed:
-     meats — protein is conserved, so raw g = cooked g × cooked-protein ÷ rawP
-     carbs — available-carb is conserved, so raw/dry g = cooked g × cooked-carb ÷ rawC
-   Rounded to 5 g for larger weights, 1 g for the small dry-grain portions. */
-function roundW(g){ return g >= 50 ? Math.round(g / 5) * 5 : Math.round(g); }
-function rawGrams(k, cookedG){
-  const F = FOODS[k];
-  if (!F || F.rawP == null) return null;
-  return roundW(cookedG * F.v[1] / F.rawP);
-}
-function dryGrams(k, cookedG){
-  const F = FOODS[k];
-  if (!F || F.rawC == null) return null;
-  return roundW(cookedG * F.v[3] / F.rawC);
-}
-function rawTag(k, cookedG){
-  const rm = rawGrams(k, cookedG);
-  if (rm != null) return ` · ${rm}g raw`;
-  const dc = dryGrams(k, cookedG);
-  if (dc != null) return ` · ${dc}g ${FOODS[k].dry ? 'dry' : 'raw'}`;
-  return '';
-}
-function ingLabel(ing){
-  if (ing.t) return ing.t;
-  const F = FOODS[ing.k];
-  if (ing.u != null) return unitLabel(F, ing.u);
-  if (ing.ml != null) return `${ing.ml}ml ${F.l}`;
-  return `${ing.g}g ${F.l}${rawTag(ing.k, ing.g)}`;
-}
-/* A swap qualifies when its re-portioned amount lands within 10% of the base
-   ingredient's pool measure after rounding to a weighable portion (flat 10% —
-   no extra headroom), and stays a portion someone would actually serve. */
-function computeSwaps(ing){
-  const pool = POOLS[ing.pool];
-  if (!pool) return [];
-  const base = ingMacros(ing), target = base[pool.b];
-  if (!target) return [];
-  const out = [];
-  for (const k of pool.keys){
-    if (k === ing.k) continue;
-    const F = FOODS[k], per = F.v[pool.b];
-    if (!per) continue;
-    const need = target / per * 100;
-    let g, label;
-    if (F.u){
-      const step = F.u.step || 0.5;
-      let u = Math.round(need / F.u.g / step) * step;
-      if (F.u.min && u < F.u.min) u = F.u.min;
-      if (u < step) u = step;
-      if (u > (F.u.max || 8)) continue;
-      g = u * F.u.g; label = unitLabel(F, u);
-    } else if (F.ml){
-      const ml = Math.round(need / 50) * 50;
-      if (ml < 50 || ml > (F.max || 600)) continue;
-      g = ml; label = `${ml}ml ${F.l}`;
-    } else {
-      g = need < 20 ? Math.round(need) : Math.round(need / 5) * 5;
-      if (g < 5 || g > (F.max || 400)) continue;
-      label = `${g}g ${F.l}${rawTag(k, g)}`;
-    }
-    const m = scaleV(F.v, g);
-    if (Math.abs(m[pool.b] - target) / target > 0.10) continue;
-    out.push({k, e:F.e, label, m, d:m.map((x,i)=>x-base[i])});
-  }
-  return out;
-}
-
-/* Whole-meal alternatives (meal.mealSwaps): curated combos that replace the
-   entire snack, calorie-matched to the meal within the same flat 10% rule,
-   other macros shown as honest differences. Ported from Sandy's app 2026-09-12
-   for the blueberry protein slice — Brenda's plan had no whole-meal swaps
-   before, only ingredient swaps. */
-function mealSwapAlts(meal){
-  if (!meal.mealSwaps) return [];
-  const base = mealMacros(meal);
-  return meal.mealSwaps.map(ms => {
-    const m = [0,0,0,0];
-    for (const p of ms.parts){ const v = ingMacros(p); for (let i=0;i<4;i++) m[i]+=v[i]; }
-    return {e: ms.e, label: ms.parts.map(ingLabel).join(' + '), m, d: m.map((x,i)=>x-base[i]), parts: ms.parts};
-  });
-}
-
-/* ---------- meals — the guide's plan, as written (single day) ---------- */
-const MEALS = [
-  {type:'pre', title:'Pre-Gym', ing:[
-    {k:'banana', u:1, pool:'fruit'}]},
-  {type:'breakfast', title:'Breakfast', folded:true, ing:[
-    {k:'oats_seeds', u:1, t:'35g rolled oats + 1 Tbsp (12g) nuts/seeds', pool:'bmuesli'},
-    {k:'almond_milk', ml:200, t:'unsweetened almond milk'},
-    {k:'whey_isolate', g:30},
-    {k:'chobani_lite', g:120, t:'120g natural yoghurt (Chobani lite)'},
-    {k:'blueberries', g:100, t:'100g frozen blueberries'}]},
-  {type:'snack', title:'Snack', ing:[
-    {k:'apple', u:1, pool:'fruit'}]},
-  {type:'lunch', title:'Lunch', ing:[
-    {k:'chicken_cooked', g:120, pool:'protein'},
-    {k:'rice_cooked', g:80, pool:'carbs'},
-    {k:'salad', g:140, t:'2 cups salad / vegetables'},
-    {k:'avocado', g:50, t:'¼ avocado (50g)', pool:'fats'}]},
-  {type:'snack', title:'Snack', ing:[
-    {k:'apple', u:1, pool:'fruit'},
-    {k:'edam_snack', u:1, pool:'snackpack'}],
-    /* blueberry slice, added 2026-09-12 — lands on all four macros exactly */
-    mealSwaps:[
-      {e:'🫐', parts:[{k:'blueberry_slice', g:70}, {k:'banana', u:0.5}]}
-    ]},
-  {type:'dinner', title:'Dinner', ing:[
-    {k:'chicken_cooked', g:120, pool:'protein'},
-    {k:'kumara_cooked', g:150, pool:'carbs'},
-    {k:'salad', g:140, t:'2 cups salad / vegetables'},
-    {k:'avocado', g:50, t:'¼ avocado (50g)', pool:'fats'}]},
-  {type:'dessert', title:'Dessert', ing:[
-    {k:'choc_slab', u:1, pool:'dessert'}],
-    /* blueberry slice, added 2026-09-12 — trades 2g of fat for 2g of protein
-       against her 135g protein target, so it beats the chocolate it replaces.
-       The 1-apple snack gets no slice swap: a plain apple is pure carbohydrate
-       and the slice is protein- and fat-dense, so nothing calorie-matched lands
-       near it on a 66 cal card. */
-    mealSwaps:[
-      {e:'🫐', parts:[{k:'blueberry_slice', g:40}]}
-    ]},
-];
+/* ---------- this person's plan, through the shared engine ----------
+   Their dislikes leave every swap group and their brand products join the
+   named group, for them alone (plans/<id>.js). */
+const { ingAmountG, ingMacros, mealMacros, ingLabel, computeSwaps, mealSwapAlts } =
+  createEngine(FOODS, POOLS, {dislikes: PLAN.dislikes, brands: PLAN.brands});
+const DAYS = PLAN.days.map(d => ({...d, meals: d.meals.map(k => PLAN.meals[k])}));
 
 /* ---------- presentation ---------- */
 const STYLE = {
   pre:      {em:"☕", bg:"#FCF2D3", fg:"#082B35"},
   breakfast:{em:"🥣", bg:"#E0F3F7", fg:"#082B35"},
+  intra:    {em:"💧", bg:"#E9F5D9", fg:"#082B35"},
   snack:    {em:"🍎", bg:"#FDEEEB", fg:"#082B35"},
   lunch:    {em:"🍽️", bg:"#DDECC6", fg:"#082B35"},
   dinner:   {em:"🌙", bg:"#F9EAE7", fg:"#082B35"},
@@ -384,8 +174,11 @@ const STYLE = {
 };
 const BASIS_NAME = {0:'same calories', 1:'same protein', 2:'same fat', 3:'same carbs'};
 
+const tabsEl=document.getElementById('tabs');
 const statsEl=document.getElementById('stats');
 const mealsEl=document.getElementById('meals');
+const titleEl=document.getElementById('targets-title');
+const subEl=document.getElementById('targets-sub');
 const footEl=document.getElementById('foot');
 
 const R = x => Math.round(x);
@@ -396,6 +189,7 @@ function ingSub(m){
   return `${R(m[0])} cal · ${R(m[1])}P · ${R(m[2])}F · ${R(m[3])}C`;
 }
 function deltaLine(swap, basis){
+  if (swap.self) return 'as planned';   /* generic slot listing its own base */
   const DEF = [[0,'m-cal','cal',''],[1,'m-pro','P','g '],[2,'m-fat','F','g '],[3,'m-carb','C','g ']];
   const parts = [];
   const [bi, bcls, bltr, bunit] = DEF[basis];
@@ -416,26 +210,46 @@ function swapRows(swaps, basis){
     <div class="swap-d">${deltaLine(sw, basis)}</div></div></div>`).join('');
 }
 
-function render(){
-  statsEl.innerHTML = `
-    <div class="stat cal"><b>~${TARGETS.cal}</b><span>cal</span></div>
-    <div class="stat pro"><b>${TARGETS.p}g</b><span>protein</span></div>
-    <div class="stat fat"><b>${TARGETS.f}g</b><span>fat</span></div>
-    <div class="stat carb"><b>${TARGETS.c}g</b><span>carbs</span></div>`;
-  mealsEl.innerHTML = MEALS.map((meal, mi)=>{
+function render(day){
+  const t = day.meals.reduce((a,meal)=>{
+    const m = mealMacros(meal);
+    return [a[0]+m[0], a[1]+m[1], a[2]+m[2], a[3]+m[3]];
+  }, [0,0,0,0]);
+  if (PLAN.header === 'targets'){
+    /* the dietitian's targets, verbatim, under a fixed "Day Targets" heading */
+    const T = PLAN.targets;
+    statsEl.innerHTML = `
+    <div class="stat cal"><b>~${T.cal}</b><span>cal</span></div>
+    <div class="stat pro"><b>${T.p}g</b><span>protein</span></div>
+    <div class="stat fat"><b>${T.f}g</b><span>fat</span></div>
+    <div class="stat carb"><b>${T.c}g</b><span>carbs</span></div>`;
+  } else {
+    titleEl.textContent = `${day.name} — Day Total`;
+    subEl.textContent = `${day.hint} · ${day.was}`;
+    statsEl.innerHTML = `
+    <div class="stat cal"><b>${R(t[0])}</b><span>cal</span></div>
+    <div class="stat pro"><b>${R(t[1])}g</b><span>protein</span></div>
+    <div class="stat fat"><b>${R(t[2])}g</b><span>fat</span></div>
+    <div class="stat carb"><b>${R(t[3])}g</b><span>carbs</span></div>`;
+  }
+
+  mealsEl.innerHTML = day.meals.map((meal, mi)=>{
     const s = STYLE[meal.type];
     const mm = mealMacros(meal);
     if (meal.folded){
       const fSwaps = meal.ing.filter(i=>i.pool).map(ing=>({ing, swaps:computeSwaps(ing)})).filter(x=>x.swaps.length);
-      const badge = fSwaps.length ? `<span class="badge">${fSwaps.length} swappable</span>`
-                                  : `<span class="badge none">as planned</span>`;
-      const swapHtml = fSwaps.length ? `<div class="fold-swaps">${fSwaps.map(({ing, swaps})=>
+      const mAlts = mealSwapAlts(meal);
+      const hasSwaps = fSwaps.length > 0 || mAlts.length > 0;
+      const badge = hasSwaps ? `<span class="badge">${fSwaps.length + (mAlts.length ? 1 : 0)} swappable</span>`
+                              : `<span class="badge none">as planned</span>`;
+      const ingSwapHtml = fSwaps.map(({ing, swaps})=>
           `<div class="swaps-label">Swap for — ${BASIS_NAME[POOLS[ing.pool].b]} — instead of ${ingLabel(ing)}</div>${
           swaps.map(sw=>`<div class="swap"><div class="swap-em">${sw.e}</div><div class="swap-txt">
             <div class="swap-name">${sw.label}</div>
-            <div class="swap-d">${deltaLine(sw, POOLS[ing.pool].b)}</div></div></div>`).join('')}`).join('')
-        }</div>` : '';
-      return `<div class="meal ${fSwaps.length?'swappable':''}">
+            <div class="swap-d">${deltaLine(sw, POOLS[ing.pool].b)}</div></div></div>`).join('')}`).join('');
+      const mealSwapHtml = mAlts.length ? `<div class="swaps-label">Swap the whole meal — ${BASIS_NAME[0]}</div>${swapRows(mAlts, 0)}` : '';
+      const swapHtml = hasSwaps ? `<div class="fold-swaps">${ingSwapHtml}${mealSwapHtml}</div>` : '';
+      return `<div class="meal ${hasSwaps?'swappable':''}">
         <div class="meal-head">
           <div class="icon" style="background:${s.bg};color:${s.fg}">${s.em}</div>
           <div class="meal-body">
@@ -443,7 +257,7 @@ function render(){
             <div class="items">${meal.ing.map(ingLabel).join(' + ')}</div>
             <div class="macros">${macroLine(mm)}</div>
           </div>
-          ${fSwaps.length?'<div class="chev">▼</div>':''}
+          ${hasSwaps?'<div class="chev">▼</div>':''}
         </div>${swapHtml}</div>`;
     }
     const rows = meal.ing.map((ing, ii)=>{
@@ -467,9 +281,9 @@ function render(){
         </div>${swapHtml}</div>`;
     }).join('');
     const nSwap = meal.ing.filter(i=>i.pool && computeSwaps(i).length).length;
-    const mAlts = mealSwapAlts(meal);
     const badge = nSwap ? `<span class="badge">${nSwap} swappable</span>`
                         : `<span class="badge none">as planned</span>`;
+    const mAlts = mealSwapAlts(meal);
     const msHtml = mAlts.length ? `<div class="fold-swaps">
         <div class="swaps-label">Swap the whole snack — ${BASIS_NAME[0]}</div>${swapRows(mAlts, 0)}</div>` : '';
     return `<div class="meal ${mAlts.length?'swappable':''}">
@@ -496,7 +310,28 @@ function render(){
     <span style="opacity:.6">v${APP_VERSION}</span>`;
 }
 
-render();
+let active=0;
+function buildTabs(){
+  tabsEl.innerHTML=DAYS.map((d,i)=>
+    `<div class="tab ${i===active?'active':''}${d.archived?' archived':''}" data-i="${i}">${d.name}<span class="kc">${d.was}</span></div>`
+  ).join('');
+  tabsEl.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click',()=>{
+      active=+t.dataset.i;
+      localStorage.setItem('mealday2',active);
+      buildTabs(); render(DAYS[active]);
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+  });
+}
+
+/* one day → no tabs; a fixed targets header → no day sub-line */
+if (PLAN.header === 'targets') subEl.remove();
+if (DAYS.length > 1){
+  active=Math.min(+(localStorage.getItem('mealday2')||0),DAYS.length-1);
+  buildTabs();
+} else tabsEl.parentElement.remove();
+render(DAYS[active]);
 
 /* ---------- auto-update: fetch fresh version, reload if stale (offline-safe) ---------- */
 (async function checkForUpdate(){
