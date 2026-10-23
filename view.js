@@ -20,7 +20,8 @@ const STYLE = {
   dinner:   {em:"🌙", bg:"#F9EAE7", fg:"#082B35"},
   dessert:  {em:"🍫", bg:"#FBF2D5", fg:"#082B35"},
 };
-const BASIS_NAME = {0:'same calories', 1:'same protein', 2:'same fat', 3:'same carbs'};
+/* every swap is within 10% (or 2 g) on calories, protein, fat and carbs (Sandy, 2026-10-23) */
+const SWAP_RULE = 'all within 10%';
 const DAY_KEY = 'mealday-name';
 
 const R = x => Math.round(x);
@@ -120,9 +121,9 @@ function mountPlan(root, bundle, opts = {}){
         const badge = hasSwaps ? `<span class="badge">${fSwaps.length + (mAlts.length ? 1 : 0)} swappable</span>`
                                 : `<span class="badge none">as planned</span>`;
         const ingSwapHtml = fSwaps.map(({ing, swaps})=>
-            `<div class="swaps-label">Swap for — ${BASIS_NAME[POOLS[ing.pool].b]} — instead of ${ingLabel(ing)}</div>${
+            `<div class="swaps-label">Swap for — ${SWAP_RULE} — instead of ${ingLabel(ing)}</div>${
             swapRows(swaps, POOLS[ing.pool].b, {day: day.name, meal: meal.title, planned: ingLabel(ing)})}`).join('');
-        const mealSwapHtml = mAlts.length ? `<div class="swaps-label">Swap the whole meal — ${BASIS_NAME[0]}</div>${swapRows(mAlts, 0, whole)}` : '';
+        const mealSwapHtml = mAlts.length ? `<div class="swaps-label">Swap the whole meal — ${SWAP_RULE}</div>${swapRows(mAlts, 0, whole)}` : '';
         const swapHtml = hasSwaps ? `<div class="fold-swaps">${ingSwapHtml}${mealSwapHtml}</div>` : '';
         return `<div class="meal ${hasSwaps?'swappable':''}">
         <div class="meal-head">
@@ -140,7 +141,7 @@ function mountPlan(root, bundle, opts = {}){
         const swaps = ing.pool ? computeSwaps(ing) : [];
         const swappable = swaps.length > 0;
         const swapHtml = swappable ? `<div class="swaps">
-          <div class="swaps-label">Swap for — ${BASIS_NAME[POOLS[ing.pool].b]}</div>${
+          <div class="swaps-label">Swap for — ${SWAP_RULE}</div>${
           swapRows(swaps, POOLS[ing.pool].b, {day: day.name, meal: meal.title, planned: ingLabel(ing)})
         }</div>` : '';
         return `<div class="ing ${swappable?'swappable':''}" data-m="${mi}" data-i="${ii}">
@@ -158,7 +159,7 @@ function mountPlan(root, bundle, opts = {}){
                           : `<span class="badge none">as planned</span>`;
       const mAlts = mealSwapAlts(meal);
       const msHtml = mAlts.length ? `<div class="fold-swaps">
-        <div class="swaps-label">Swap the whole snack — ${BASIS_NAME[0]}</div>${swapRows(mAlts, 0, whole)}</div>` : '';
+        <div class="swaps-label">Swap the whole snack — ${SWAP_RULE}</div>${swapRows(mAlts, 0, whole)}</div>` : '';
       return `<div class="meal ${mAlts.length?'swappable':''}">
       <div class="meal-head">
         <div class="icon" style="background:${s.bg};color:${s.fg}">${s.em}</div>

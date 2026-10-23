@@ -56,12 +56,42 @@ function createEngine(FOODS, POOLS, person = {}){
     if (ing.ml != null) return `${ing.ml}ml ${F.l}`;
     return `${ing.g}g ${F.l}${weightTag(ing.k, ing.g)}`;
   }
-  /* A swap qualifies when its re-portioned amount lands within 10% of the base
-     ingredient's pool macro after rounding to a weighable portion (Sandy's
-     rule: nothing gets more headroom than 10%, so coarse unit roundings like
-     half a bagel for a crumpet simply don't appear). There is no upper
-     portion limit (Sandy, 2026-10-20: "No limits" — 610 g of pumpkin is fine)
-     except a unit food's u.max where one is set (rice cakes, corn thins: 4). */
+  /* Sandy's rule (2026-10-23): a swap is within 10% of the original on
+     calories AND protein, fat and carbs, or within 2 g (8 cal) where 10% is
+     less than that, so a line with 0.6 g of fat isn't held to 0.06 g. The
+     portion isn't matched on one macro: each weighable amount around that
+     point is tried, and the one closest on all four is kept, if it fits.
+     There is no upper portion limit except a unit food's u.max where one is
+     set (rice cakes, corn thins: 4). A line with nothing that fits shows as
+     planned. */
+  const FLOOR = [8, 2, 2, 2];
+  function miss(base, m){
+    return Math.max(...[0, 1, 2, 3].map(i => Math.abs(m[i] - base[i]) / Math.max(0.1 * Math.abs(base[i]), FLOOR[i])));
+  }
+  function fits(base, m){ return miss(base, m) <= 1 + 1e-9; }
+  /* every weighable amount of food F between half and twice the amount that
+     matches the group's measure: [grams, label] */
+  function portions(F, k, need){
+    const out = [];
+    if (F.u){
+      const step = F.u.step || 0.5;
+      const hi = Math.max(step, Math.ceil(2 * need / F.u.g / step) * step);
+      for (let u = Math.max(step, F.u.min || 0); u <= hi + 1e-9; u += step){
+        if (F.u.max && u > F.u.max) break;   /* only rice cakes and corn thins: no more than 4 */
+        out.push([u * F.u.g, unitLabel(F, u)]);
+      }
+    } else if (F.ml){
+      for (let ml = 50; ml <= Math.max(50, 2 * need); ml += 50) out.push([ml, `${ml}ml ${F.l}`]);
+    } else {
+      const seen = new Set();
+      for (let x = need / 2; x <= need * 2; x += Math.max(1, need / 200)){
+        const g = x < 20 ? Math.round(x) : Math.round(x / 5) * 5;
+        if (g < 5 || seen.has(g)) continue;
+        seen.add(g); out.push([g, `${g}g ${F.l}${weightTag(k, g)}`]);
+      }
+    }
+    return out;
+  }
   function computeSwaps(ing){
     const pool = effectivePools[ing.pool];
     if (!pool) return [];
@@ -75,32 +105,20 @@ function createEngine(FOODS, POOLS, person = {}){
       if (form && F.form && F.form !== form) continue;   /* raw line → raw meats only, cooked → cooked */
       if (!per) continue;
       const need = target / per * 100;
-      let g, label;
-      if (F.u){
-        const step = F.u.step || 0.5;
-        let u = Math.round(need / F.u.g / step) * step;
-        if (F.u.min && u < F.u.min) u = F.u.min;
-        if (u < step) u = step;
-        if (F.u.max && u > F.u.max) continue;   /* only rice cakes and corn thins: no more than 4 */
-        g = u * F.u.g; label = unitLabel(F, u);
-      } else if (F.ml){
-        const ml = Math.round(need / 50) * 50;
-        if (ml < 50) continue;
-        g = ml; label = `${ml}ml ${F.l}`;
-      } else {
-        g = need < 20 ? Math.round(need) : Math.round(need / 5) * 5;
-        if (g < 5) continue;
-        label = `${g}g ${F.l}${weightTag(k, g)}`;
+      let best = null;
+      for (const [g, label] of portions(F, k, need)){
+        const m = scaleV(F.v, g), score = miss(base, m);
+        if (!best || score < best.score - 1e-9 || (Math.abs(score - best.score) <= 1e-9 && Math.abs(g - need) < Math.abs(best.g - need)))
+          best = {g, label, m, score};
       }
-      const m = scaleV(F.v, g);
-      if (Math.abs(m[pool.b] - target) / target > 0.10) continue;
-      out.push({k, e:F.e, label, m, d:m.map((x,i)=>x-base[i]), self:k===ing.k});
+      if (!best || !fits(base, best.m)) continue;
+      out.push({k, e:F.e, label:best.label, m:best.m, d:best.m.map((x,i)=>x-base[i]), self:k===ing.k});
     }
     return out;
   }
   /* Whole-meal alternatives (meal.mealSwaps): curated combos that replace the
-     entire snack — e.g. protein pancakes + a banana — calorie-matched to the
-     meal within the same 10% rule, other macros shown as honest differences. */
+     entire snack — e.g. protein pancakes + a banana — under the same rule on
+     calories and every macro; one that doesn't fit isn't shown. */
   function mealSwapAlts(meal){
     if (!meal.mealSwaps) return [];
     const base = mealMacros(meal);
@@ -108,9 +126,9 @@ function createEngine(FOODS, POOLS, person = {}){
       const m = [0,0,0,0];
       for (const p of ms.parts){ const v = ingMacros(p); for (let i=0;i<4;i++) m[i]+=v[i]; }
       return {e: ms.e, label: ms.parts.map(ingLabel).join(' + '), m, d: m.map((x,i)=>x-base[i]), parts: ms.parts};
-    });
+    }).filter(alt => fits(base, alt.m));
   }
-  return { effectivePools, scaleV, ingAmountG, ingMacros, mealMacros, fmtU, unitLabel, roundW, weightTag, ingLabel, computeSwaps, mealSwapAlts };
+  return { effectivePools, scaleV, ingAmountG, ingMacros, mealMacros, fmtU, unitLabel, roundW, weightTag, ingLabel, computeSwaps, mealSwapAlts, fits };
 }
 
 /* Node: evals.js requires this file. Browser: plain script, createEngine is global. */
