@@ -57,14 +57,15 @@ function createEngine(FOODS, POOLS, person = {}){
     return `${ing.g}g ${F.l}${weightTag(ing.k, ing.g)}`;
   }
   /* Sandy's rule (2026-10-23): a swap is within 10% of the original on
-     calories AND protein, fat and carbs, or within 2 g (8 cal) where 10% is
-     less than that, so a line with 0.6 g of fat isn't held to 0.06 g. The
+     calories AND protein, fat and carbs, or within 4 g (16 cal) where 10% is
+     less than that, so a line with 0.6 g of fat isn't held to 0.06 g. (First
+     2 g; Sandy raised it to 4 g the same day so pasta stays a swap for rice.) The
      portion isn't matched on one macro: each weighable amount around that
      point is tried, and the one closest on all four is kept, if it fits.
      There is no upper portion limit except a unit food's u.max where one is
      set (rice cakes, corn thins: 4). A line with nothing that fits shows as
      planned. */
-  const FLOOR = [8, 2, 2, 2];
+  const FLOOR = [16, 4, 4, 4];
   function miss(base, m){
     return Math.max(...[0, 1, 2, 3].map(i => Math.abs(m[i] - base[i]) / Math.max(0.1 * Math.abs(base[i]), FLOOR[i])));
   }
