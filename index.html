@@ -123,215 +123,171 @@
 
   footer{font-family:var(--n8-font-ui); color:var(--muted2); font-size:12px; text-align:center; padding:22px 8px; line-height:1.6}
   footer .n8mark{display:block; width:74px; margin:0 auto 12px; opacity:.85}
+  footer .status{color:var(--fat)}
+  header{display:flex; align-items:center; justify-content:space-between}
+  #nav a{font-family:var(--n8-font-ui); font-size:14px}
+
+  /* coach and admin views */
+  .clients h2{font-family:var(--n8-font-serif); font-size:24px; font-weight:500; margin:10px 0 10px}
+  .clients h3{font-family:var(--n8-font-ui); font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted2); margin:14px 0 6px}
+  .clients .client{display:block; width:100%; text-align:left; font:inherit; font-size:18px; padding:14px 16px; margin:0 0 8px;
+    background:var(--card); border:1px solid var(--line); color:var(--text); cursor:pointer}
+  .clients .muted, .flagrow .muted{color:var(--muted2); font-family:var(--n8-font-ui); font-size:12.5px}
+  .flagrow{background:var(--card); border:1px solid var(--line); padding:12px 16px; margin:0 0 8px; font-size:15px}
+  .flagrow .note{color:var(--muted); font-style:italic; margin:4px 0}
+  .flagrow .resolve{margin-left:10px; font-family:var(--n8-font-ui); font-size:12px; padding:4px 12px; border-radius:999px;
+    border:1px solid var(--n8-ink-20); background:transparent; cursor:pointer}
+  .viewing{font-family:var(--n8-font-ui); font-size:14px; margin:0 0 8px}
+  .sheet{position:fixed; left:0; right:0; bottom:0; background:var(--n8-paper); border-top:1px solid var(--line);
+    padding:16px max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-bottom)); box-shadow:0 -6px 24px rgba(8,43,53,.12)}
+  .sheet textarea{display:block; width:100%; font:inherit; font-size:16px; padding:10px; border:1px solid var(--n8-ink-20); margin:4px 0 10px}
+  .sheet button{font-family:var(--n8-font-ui); font-size:15px; padding:10px 20px; border:none; border-radius:999px; background:var(--n8-ink); color:#fff}
+
+  .account{font-family:var(--n8-font-ui); font-size:12px; text-align:center; margin-top:-14px; padding-bottom:20px}
+  .account a{color:var(--muted2)}
+  .account .signin-again{color:var(--fat); margin-right:12px}
+  .signin .retry{font-family:var(--n8-font-ui); font-size:15px; padding:10px 20px; border:none; border-radius:999px; background:var(--n8-ink); color:#fff}
+
+  /* coach and admin views: report a swap that looks wrong */
+  /* sign-in */
+  .signin{padding:8px 0 24px}
+  .signin h2{font-family:var(--n8-font-serif); font-size:24px; font-weight:500; margin:8px 0 6px}
+  .signin p{font-size:15.5px; color:var(--muted); margin:0 0 14px}
+  .signin input{display:block; width:100%; font:inherit; font-size:17px; padding:12px 14px; margin:0 0 12px;
+    border:1px solid var(--n8-ink-20); border-radius:0; background:var(--n8-paper); color:var(--n8-ink)}
+  .signin #code{letter-spacing:6px; font-size:22px}
+  .signin button{font-family:var(--n8-font-ui); font-size:15px; padding:12px 22px; border:none; border-radius:999px;
+    background:var(--n8-ink); color:#fff; cursor:pointer}
+  .signin button:disabled{opacity:.5}
+  .signin .signin-msg{color:var(--fat); margin-top:12px; min-height:1em}
+
+  .flag{display:inline-block; margin-top:5px; padding:0; border:none; background:none; cursor:pointer;
+    font-family:var(--n8-font-ui); font-size:11px; color:var(--muted2); text-decoration:underline; text-underline-offset:2px}
+  /* brand: nomad8 (deploy.js) */
+  :root{--n8-ink:#082B35; --n8-ink-80:#3a5259; --n8-ink-60:#6b7d82; --n8-ink-20:#cdd4d6; --n8-cream:#FBF2D5; --n8-paper:#FFFFFF; --n8-border:#E6E4DF; --n8-green:#97C93D; --n8-orange:#E97A52; --n8-yellow:#F5B915; --n8-wash-green:#DDECC6; --n8-wash-yellow:#FCF2D3; --n8-wash-pink:#FDEEEB; --n8-wash-blue:#E0F3F7; --n8-wash-sage:#E9F5D9; --n8-wash-blush:#F9EAE7; --cal:#1E6B7D; --pro:#5C8512; --fat:#C0521F; --carb:#8A6A08}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <h1><img class="logo" src="icon-n8.png" alt="">Meal Swaps</h1>
+    <nav id="nav" hidden><a href="#" id="to-clients">Clients</a></nav>
   </header>
 </div>
-<div class="wrap"><div class="tabs" id="tabs"></div></div>
-<div class="wrap">
-  <div class="targets">
-    <h2 id="targets-title">Day Targets</h2>
-    <p class="targets-sub" id="targets-sub"></p>
-    <div class="stats" id="stats"></div>
-  </div>
-  <div id="meals"></div>
-  <footer id="foot"></footer>
-</div>
+<div class="wrap" id="app"></div>
+<div class="wrap account" id="account" hidden><a href="#" class="signin-again" hidden>Sign in again</a> <a href="#" class="signout">Sign out</a></div>
 
-<!-- One page for every client (step 2, 2026-10-20). The shared library, swap
-     groups and swap maths live in their own files so evals.js runs the same code
-     the page does; plan.js is this site's person (deploy.js copies plans/<id>.js).
-     All are plain scripts, so the page works offline as before.
+<!-- One page for every client (step 2), signed in (step 3, 2026-10-23). The
+     plan, food library and swap groups come from Supabase after sign-in and are
+     kept on the phone for offline use (data.js); view.js draws them with the
+     shared engine. supabase-js ships with the site, never from a CDN.
      ?v= must match APP_VERSION below. -->
-<script src="foods.js?v=2026-10-20.3"></script>
-<script src="pools.js?v=2026-10-20.3"></script>
-<script src="engine.js?v=2026-10-20.3"></script>
-<script src="plan.js?v=2026-10-20.3"></script>
+<script src="vendor/supabase.js?v=2026-10-23.1"></script>
+<script src="config.js?v=2026-10-23.1"></script>
+<script src="engine.js?v=2026-10-23.1"></script>
+<script src="view.js?v=2026-10-23.1"></script>
+<script src="data.js?v=2026-10-23.1"></script>
+<script src="signin.js?v=2026-10-23.1"></script>
+<script src="coach.js?v=2026-10-23.1"></script>
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-10-20.3';
+const APP_VERSION = '2026-10-23.1';
 
-/* ---------- this person's plan, through the shared engine ----------
-   Their dislikes leave every swap group and their brand products join the
-   named group, for them alone (plans/<id>.js). */
-const { ingAmountG, ingMacros, mealMacros, ingLabel, computeSwaps, mealSwapAlts } =
-  createEngine(FOODS, POOLS, {dislikes: PLAN.dislikes, brands: PLAN.brands});
-const DAYS = PLAN.days.map(d => ({...d, meals: d.meals.map(k => PLAN.meals[k])}));
+/* ---------- sign-in, then this person's plan ----------
+   The phone's copy shows at once; the fresh one replaces it when it arrives,
+   and is saved only once it has drawn. Offline, the copy stays with "Couldn't
+   check for updates". If the session is lost for an unclear reason, the copy
+   stays and a "Sign in again" link appears. The copy goes only on a definite
+   rejection, an account with no profile, or signing out. */
+const sb = supabase.createClient(CONFIG.url, CONFIG.anonKey, {auth: {persistSession: true,
+  autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'mealswaps-auth'}});
+const D = createData(sb);
+const app = document.getElementById('app');
+let onScreen = null;   /* what's drawn, so a refresh that changes nothing doesn't redraw */
+let view = 0;          /* bumped on every navigation; a boot that finishes after one leaves the screen alone */
 
-/* ---------- presentation ---------- */
-const STYLE = {
-  pre:      {em:"☕", bg:"#FCF2D3", fg:"#082B35"},
-  breakfast:{em:"🥣", bg:"#E0F3F7", fg:"#082B35"},
-  intra:    {em:"💧", bg:"#E9F5D9", fg:"#082B35"},
-  snack:    {em:"🍎", bg:"#FDEEEB", fg:"#082B35"},
-  lunch:    {em:"🍽️", bg:"#DDECC6", fg:"#082B35"},
-  dinner:   {em:"🌙", bg:"#F9EAE7", fg:"#082B35"},
-  dessert:  {em:"🍫", bg:"#FBF2D5", fg:"#082B35"},
-};
-const BASIS_NAME = {0:'same calories', 1:'same protein', 2:'same fat', 3:'same carbs'};
-
-const tabsEl=document.getElementById('tabs');
-const statsEl=document.getElementById('stats');
-const mealsEl=document.getElementById('meals');
-const titleEl=document.getElementById('targets-title');
-const subEl=document.getElementById('targets-sub');
-const footEl=document.getElementById('foot');
-
-const R = x => Math.round(x);
-function macroLine(m){
-  return `<span class="m-cal">${R(m[0])} cal</span> · <span class="m-pro">${R(m[1])}g P</span> · <span class="m-fat">${R(m[2])}g F</span> · <span class="m-carb">${R(m[3])}g C</span>`;
-}
-function ingSub(m){
-  return `${R(m[0])} cal · ${R(m[1])}P · ${R(m[2])}F · ${R(m[3])}C`;
-}
-function deltaLine(swap, basis){
-  if (swap.self) return 'as planned';   /* generic slot listing its own base */
-  const DEF = [[0,'m-cal','cal',''],[1,'m-pro','P','g '],[2,'m-fat','F','g '],[3,'m-carb','C','g ']];
-  const parts = [];
-  const [bi, bcls, bltr, bunit] = DEF[basis];
-  const db = R(swap.d[basis]);
-  parts.push(`<span class="${bcls}">${Math.abs(db) < 1 ? '=' : (db > 0 ? '+' : '−') + Math.abs(db) + bunit}${bltr}</span>`);
-  for (const [i, cls, ltr, unit] of DEF){
-    if (i === basis) continue;
-    const d = R(swap.d[i]);
-    const min = i === 0 ? 5 : 1;
-    if (Math.abs(d) < min) continue;
-    parts.push(`<span class="${cls}">${d > 0 ? '+' : '−'}${Math.abs(d)}${unit}${ltr}</span>`);
+/* draws a bundle; false if it can't be drawn. A fresh bundle is saved only now */
+function show(bundle, status, {fresh = false, signIn = false} = {}){
+  const key = JSON.stringify(bundle) + '|' + (status || '');
+  if (key !== onScreen){
+    try { mountPlan(app, bundle, {status}); }
+    catch (e){ onScreen = null; return false; }
+    onScreen = key;
   }
-  return parts.length > 1 || Math.abs(db) >= 1 ? parts.join(' · ') : parts[0] + ' · near-exact match';
+  if (fresh) D.save(bundle);
+  account.hidden = false;
+  againLink.hidden = !signIn;
+  return true;
 }
-function swapRows(swaps, basis){
-  return swaps.map(sw=>`<div class="swap"><div class="swap-em">${sw.e}</div><div class="swap-txt">
-    <div class="swap-name">${sw.label}</div>
-    <div class="swap-d">${deltaLine(sw, basis)}</div></div></div>`).join('');
+function message(text, retry){
+  onScreen = null;
+  app.innerHTML = `<div class="signin"><p>${text}</p>${retry ? '<button type="button" class="retry">Try again</button>' : ''}</div>`;
+  if (retry) app.querySelector('.retry').addEventListener('click', () => start());
+  account.hidden = false;
 }
+/* outside #app, so redrawing a day never drops it */
+const account = document.getElementById('account');
+const againLink = account.querySelector('.signin-again');
+account.querySelector('.signout').addEventListener('click', async e => {
+  e.preventDefault();
+  await sb.auth.signOut({scope: 'local'});
+  D.clear();
+  location.reload();
+});
+againLink.addEventListener('click', async e => {
+  e.preventDefault();
+  view++;
+  onScreen = null; account.hidden = true; nav.hidden = true;
+  await signIn('');
+  start();
+});
+/* a different person signing in on this phone never sees the last one's copy */
+async function signIn(msg){
+  await showSignIn(app, sb, {message: msg});
+  const { data } = await sb.auth.getSession();
+  const c = D.cached();
+  if (c && data.session && c.clientId !== data.session.user.id) D.clear();
+}
+/* coaches and the admin get a "Clients" link; a coach with no plan of their
+   own (Livi) opens on their clients */
+const nav = document.getElementById('nav');
+let who = null;
+function clients(hasPlan){
+  view++;
+  onScreen = null;
+  nav.hidden = true;
+  mountClients(app, D, who, {onOwnPlan: hasPlan ? () => start() : null});
+}
+nav.querySelector('#to-clients').addEventListener('click', e => { e.preventDefault(); clients(true); });
 
-function render(day){
-  const t = day.meals.reduce((a,meal)=>{
-    const m = mealMacros(meal);
-    return [a[0]+m[0], a[1]+m[1], a[2]+m[2], a[3]+m[3]];
-  }, [0,0,0,0]);
-  if (PLAN.header === 'targets'){
-    /* the dietitian's targets, verbatim, under a fixed "Day Targets" heading */
-    const T = PLAN.targets;
-    statsEl.innerHTML = `
-    <div class="stat cal"><b>~${T.cal}</b><span>cal</span></div>
-    <div class="stat pro"><b>${T.p}g</b><span>protein</span></div>
-    <div class="stat fat"><b>${T.f}g</b><span>fat</span></div>
-    <div class="stat carb"><b>${T.c}g</b><span>carbs</span></div>`;
-  } else {
-    titleEl.textContent = `${day.name} — Day Total`;
-    subEl.textContent = `${day.hint} · ${day.was}`;
-    statsEl.innerHTML = `
-    <div class="stat cal"><b>${R(t[0])}</b><span>cal</span></div>
-    <div class="stat pro"><b>${R(t[1])}g</b><span>protein</span></div>
-    <div class="stat fat"><b>${R(t[2])}g</b><span>fat</span></div>
-    <div class="stat carb"><b>${R(t[3])}g</b><span>carbs</span></div>`;
-  }
-
-  mealsEl.innerHTML = day.meals.map((meal, mi)=>{
-    const s = STYLE[meal.type];
-    const mm = mealMacros(meal);
-    if (meal.folded){
-      const fSwaps = meal.ing.filter(i=>i.pool).map(ing=>({ing, swaps:computeSwaps(ing)})).filter(x=>x.swaps.length);
-      const mAlts = mealSwapAlts(meal);
-      const hasSwaps = fSwaps.length > 0 || mAlts.length > 0;
-      const badge = hasSwaps ? `<span class="badge">${fSwaps.length + (mAlts.length ? 1 : 0)} swappable</span>`
-                              : `<span class="badge none">as planned</span>`;
-      const ingSwapHtml = fSwaps.map(({ing, swaps})=>
-          `<div class="swaps-label">Swap for — ${BASIS_NAME[POOLS[ing.pool].b]} — instead of ${ingLabel(ing)}</div>${
-          swaps.map(sw=>`<div class="swap"><div class="swap-em">${sw.e}</div><div class="swap-txt">
-            <div class="swap-name">${sw.label}</div>
-            <div class="swap-d">${deltaLine(sw, POOLS[ing.pool].b)}</div></div></div>`).join('')}`).join('');
-      const mealSwapHtml = mAlts.length ? `<div class="swaps-label">Swap the whole meal — ${BASIS_NAME[0]}</div>${swapRows(mAlts, 0)}` : '';
-      const swapHtml = hasSwaps ? `<div class="fold-swaps">${ingSwapHtml}${mealSwapHtml}</div>` : '';
-      return `<div class="meal ${hasSwaps?'swappable':''}">
-        <div class="meal-head">
-          <div class="icon" style="background:${s.bg};color:${s.fg}">${s.em}</div>
-          <div class="meal-body">
-            <div class="meal-kicker"><span class="name">${meal.title}</span>${badge}</div>
-            <div class="items">${meal.ing.map(ingLabel).join(' + ')}</div>
-            <div class="macros">${macroLine(mm)}</div>
-          </div>
-          ${hasSwaps?'<div class="chev">▼</div>':''}
-        </div>${swapHtml}</div>`;
+async function start(){
+  const mine = ++view;
+  const cached = D.cached();
+  try {
+    if (cached){ show(cached, null); if (who) nav.hidden = who.role === 'client'; }
+    const r = await D.boot();
+    if (mine !== view) return;   /* they moved on while this was loading */
+    if (r.status === 'signed-out' || r.status === 'no-profile'){
+      onScreen = null; who = null; account.hidden = true; nav.hidden = true;
+      if (r.status === 'no-profile'){ await sb.auth.signOut({scope: 'local'}); forgetSent(localStorage); }
+      await signIn(r.status === 'no-profile' ? "This email isn't set up yet. Ask your dietitian" : '');
+      return start();
     }
-    const rows = meal.ing.map((ing, ii)=>{
-      const F = FOODS[ing.k];
-      const swaps = ing.pool ? computeSwaps(ing) : [];
-      const swappable = swaps.length > 0;
-      const swapHtml = swappable ? `<div class="swaps">
-          <div class="swaps-label">Swap for — ${BASIS_NAME[POOLS[ing.pool].b]}</div>${
-          swaps.map(sw=>`<div class="swap"><div class="swap-em">${sw.e}</div><div class="swap-txt">
-            <div class="swap-name">${sw.label}</div>
-            <div class="swap-d">${deltaLine(sw, POOLS[ing.pool].b)}</div></div></div>`).join('')
-        }</div>` : '';
-      return `<div class="ing ${swappable?'swappable':''}" data-m="${mi}" data-i="${ii}">
-        <div class="ing-line">
-          <div class="ing-em">${F.e}</div>
-          <div class="ing-txt">
-            <div class="ing-name">${ingLabel(ing)}</div>
-            <div class="ing-sub">${ingSub(ingMacros(ing))}</div>
-          </div>
-          ${swappable?'<div class="chev">▼</div>':''}
-        </div>${swapHtml}</div>`;
-    }).join('');
-    const nSwap = meal.ing.filter(i=>i.pool && computeSwaps(i).length).length;
-    const badge = nSwap ? `<span class="badge">${nSwap} swappable</span>`
-                        : `<span class="badge none">as planned</span>`;
-    const mAlts = mealSwapAlts(meal);
-    const msHtml = mAlts.length ? `<div class="fold-swaps">
-        <div class="swaps-label">Swap the whole snack — ${BASIS_NAME[0]}</div>${swapRows(mAlts, 0)}</div>` : '';
-    return `<div class="meal ${mAlts.length?'swappable':''}">
-      <div class="meal-head">
-        <div class="icon" style="background:${s.bg};color:${s.fg}">${s.em}</div>
-        <div class="meal-body">
-          <div class="meal-kicker"><span class="name">${meal.title}</span>${badge}</div>
-          <div class="macros">${macroLine(mm)}</div>
-        </div>
-        ${mAlts.length?'<div class="chev">▼</div>':''}
-      </div>
-      <div class="ings">${rows}</div>${msHtml}</div>`;
-  }).join('');
-
-  mealsEl.querySelectorAll('.ing.swappable .ing-line').forEach(h=>{
-    h.addEventListener('click',()=>h.parentElement.classList.toggle('open'));
-  });
-  mealsEl.querySelectorAll('.meal.swappable .meal-head').forEach(h=>{
-    h.addEventListener('click',()=>h.parentElement.classList.toggle('open'));
-  });
-
-  footEl.innerHTML = `<img class="n8mark" src="nomad-logo.png" alt="Nomad8">
-    All data from the NZ Food Composition Database unless it's a specific brand<br>
-    <span style="opacity:.6">v${APP_VERSION}</span>`;
+    if (!r.signIn) who = await D.me().catch(() => who);
+    if (mine !== view) return;
+    const coachView = !!who && who.role !== 'client';
+    if (r.bundle){
+      const ok = show(r.bundle, r.status, {fresh: r.status === null, signIn: r.signIn});
+      if (!ok && !(cached && show(cached, "Couldn't check for updates"))) message(WENT_WRONG, true);
+      nav.hidden = !coachView;
+    }
+    else if (coachView && !cached){ account.hidden = false; clients(false); }
+    else if (!cached) message(r.status, r.status === WENT_WRONG);
+  } catch (e){
+    if (mine === view && !cached) message(WENT_WRONG, true);
+  }
 }
-
-let active=0;
-function buildTabs(){
-  tabsEl.innerHTML=DAYS.map((d,i)=>
-    `<div class="tab ${i===active?'active':''}${d.archived?' archived':''}" data-i="${i}">${d.name}<span class="kc">${d.was}</span></div>`
-  ).join('');
-  tabsEl.querySelectorAll('.tab').forEach(t=>{
-    t.addEventListener('click',()=>{
-      active=+t.dataset.i;
-      localStorage.setItem('mealday2',active);
-      buildTabs(); render(DAYS[active]);
-      window.scrollTo({top:0,behavior:'smooth'});
-    });
-  });
-}
-
-/* one day → no tabs; a fixed targets header → no day sub-line */
-if (PLAN.header === 'targets') subEl.remove();
-if (DAYS.length > 1){
-  active=Math.min(+(localStorage.getItem('mealday2')||0),DAYS.length-1);
-  buildTabs();
-} else tabsEl.parentElement.remove();
-render(DAYS[active]);
+start();
 
 /* ---------- auto-update: fetch fresh version, reload if stale (offline-safe) ---------- */
 (async function checkForUpdate(){
