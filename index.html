@@ -163,6 +163,32 @@
 
   .flag{display:inline-block; margin-top:5px; padding:0; border:none; background:none; cursor:pointer;
     font-family:var(--n8-font-ui); font-size:11px; color:var(--muted2); text-decoration:underline; text-underline-offset:2px}
+  /* step 4: a client's own dishes */
+  .dish-edit{display:inline-block; margin:5px 0 0 12px; padding:0; border:none; background:none; cursor:pointer;
+    font-family:var(--n8-font-ui); font-size:11px; color:var(--muted2); text-decoration:underline; text-underline-offset:2px}
+  .dish-add{display:block; margin-top:10px; padding:7px 12px; border:1px solid var(--line); border-radius:8px;
+    background:none; cursor:pointer; font-family:var(--n8-font-ui); font-size:12px; color:var(--n8-ink)}
+  .dishform{background:var(--card, #fff); border-radius:14px; padding:16px; margin:12px 0}
+  .dishform h2{margin:0 0 12px} .dishform h3{font-size:14px; margin:16px 0 6px}
+  .dishform label{display:block; margin:8px 0; font-family:var(--n8-font-ui); font-size:13px}
+  .dishform input, .dishform select{display:block; width:100%; box-sizing:border-box; margin-top:3px; padding:8px;
+    border:1px solid var(--line); border-radius:8px; font:inherit; font-size:16px}
+  .dishform input.short{display:inline-block; width:90px}
+  .dishform label input[type=checkbox]{display:inline; width:auto; margin-right:6px}
+  .dish-part{display:flex; align-items:center; gap:6px; padding:6px 0; border-bottom:1px solid var(--line); font-size:14px}
+  .dish-part .dp-name{flex:1}
+  .dp-remove{border:none; background:none; cursor:pointer; color:var(--muted2); font-size:14px}
+  .dish-hit{display:block; width:100%; text-align:left; padding:7px 4px; border:none; border-bottom:1px solid var(--line);
+    background:none; cursor:pointer; font:inherit; font-size:14px}
+  .dish-product{border:1px solid var(--line); border-radius:10px; padding:4px 12px 12px; margin:10px 0}
+  .dish-preview{margin:14px 0; padding:10px 12px; border-radius:10px; background:var(--line)}
+  .dish-btn{padding:9px 16px; border:none; border-radius:8px; background:var(--n8-ink); color:#fff; cursor:pointer; font:inherit}
+  .dish-btn:disabled{opacity:.5}
+  .dish-link{border:none; background:none; cursor:pointer; font:inherit; font-size:13px; color:var(--muted); text-decoration:underline; margin:6px 8px 0 0}
+  .dish-link.danger{color:var(--fat)} .dish-link:disabled{opacity:.5}
+  .dish-actions{margin-top:12px} .dish-warn{color:var(--fat); font-size:13px} .dish-msg{color:var(--fat); font-size:13px; min-height:1em}
+  .from-label{font-family:var(--n8-font-ui); font-size:10px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--muted2); border:1px solid var(--line); border-radius:4px; padding:0 4px; white-space:nowrap}
   /* brand: nomad8 (deploy.js) */
   :root{--n8-ink:#082B35; --n8-ink-80:#3a5259; --n8-ink-60:#6b7d82; --n8-ink-20:#cdd4d6; --n8-cream:#FBF2D5; --n8-paper:#FFFFFF; --n8-border:#E6E4DF; --n8-green:#97C93D; --n8-orange:#E97A52; --n8-yellow:#F5B915; --n8-wash-green:#DDECC6; --n8-wash-yellow:#FCF2D3; --n8-wash-pink:#FDEEEB; --n8-wash-blue:#E0F3F7; --n8-wash-sage:#E9F5D9; --n8-wash-blush:#F9EAE7; --cal:#1E6B7D; --pro:#5C8512; --fat:#C0521F; --carb:#8A6A08}
 </style>
@@ -182,16 +208,17 @@
      kept on the phone for offline use (data.js); view.js draws them with the
      shared engine. supabase-js ships with the site, never from a CDN.
      ?v= must match APP_VERSION below. -->
-<script src="vendor/supabase.js?v=2026-10-31.1"></script>
-<script src="config.js?v=2026-10-31.1"></script>
-<script src="engine.js?v=2026-10-31.1"></script>
-<script src="view.js?v=2026-10-31.1"></script>
-<script src="data.js?v=2026-10-31.1"></script>
-<script src="signin.js?v=2026-10-31.1"></script>
-<script src="coach.js?v=2026-10-31.1"></script>
+<script src="vendor/supabase.js?v=2026-10-31.2"></script>
+<script src="config.js?v=2026-10-31.2"></script>
+<script src="engine.js?v=2026-10-31.2"></script>
+<script src="view.js?v=2026-10-31.2"></script>
+<script src="data.js?v=2026-10-31.2"></script>
+<script src="signin.js?v=2026-10-31.2"></script>
+<script src="coach.js?v=2026-10-31.2"></script>
+<script src="dishform.js?v=2026-10-31.2"></script>
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-10-31.1';
+const APP_VERSION = '2026-10-31.2';
 
 /* ---------- sign-in, then this person's plan ----------
    The phone's copy shows at once; the fresh one replaces it when it arrives,
@@ -210,7 +237,8 @@ let view = 0;          /* bumped on every navigation; a boot that finishes after
 function show(bundle, status, {fresh = false, signIn = false} = {}){
   const key = JSON.stringify(bundle) + '|' + (status || '');
   if (key !== onScreen){
-    try { mountPlan(app, bundle, {status}); }
+    try { mountPlan(app, bundle, {status, onAddDish: meal => dishForm(bundle, {meal}),
+      onEditDish: id => dishForm(bundle, {dish: (bundle.dishes || []).find(d => d.id === id)})}); }
     catch (e){ onScreen = null; return false; }
     onScreen = key;
   }
@@ -218,6 +246,13 @@ function show(bundle, status, {fresh = false, signIn = false} = {}){
   account.hidden = false;
   againLink.hidden = !signIn;
   return true;
+}
+/* step 4: the own-dish form replaces the plan until saved or cancelled */
+function dishForm(bundle, {meal = null, dish = null}){
+  view++;
+  onScreen = null;
+  window.scrollTo({top: 0});
+  mountDishForm(app, {bundle, data: D, meal, dish, onDone: () => { onScreen = null; start(); }});
 }
 function message(text, retry){
   onScreen = null;

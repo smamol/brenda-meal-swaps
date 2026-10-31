@@ -6,6 +6,7 @@
  *   D.fetchBundle(clientId?)  -> bundle (view.js)   own plan when omitted
  *   D.boot()                  -> {bundle, status}
  *   D.cached(), D.save(bundle)
+ *   D.saveProduct(p), D.saveDish(d), D.deleteDish(id)   own products and dishes (step 4)
  *
  * The bundle is cached whole under one key, so an offline phone never pairs an
  * old plan with a newer food library. boot() never saves: the page saves a
@@ -67,8 +68,14 @@ function createData(supabase, storage = localStorage){
       : await get(supabase.from('brands').select('doc').eq('slug', DEFAULT_BRAND).maybeSingle());
     const foods = Object.fromEntries((await get(supabase.from('foods').select('key, doc'))).map(r => [r.key, r.doc]));
     const pools = Object.fromEntries((await get(supabase.from('pools').select('name, doc'))).map(r => [r.name, r.doc]));
+    /* step 4: the client's own products and dishes. RLS shows a coach their
+       clients' rows; the eq keeps a coach's own client view to that client */
+    const products = Object.fromEntries((await get(supabase.from('client_products').select('*').eq('user_id', clientId)))
+      .map(r => [r.id, {name: r.name, v: [+r.kcal, +r.p, +r.f, +r.c], ml: !!r.ml}]));
+    const dishes = (await get(supabase.from('client_dishes').select('*').eq('user_id', clientId)))
+      .map(r => ({id: r.id, name: r.name, emoji: r.emoji, slot: r.slot, parts: r.parts}));
     const bundle = {plan: plan.doc, foods, pools, brand: brand && brand.doc, coachName: coach ? coach.display_name : null,
-      loadedAt: plan.loaded_at, clientId};
+      loadedAt: plan.loaded_at, clientId, products, dishes};
     if (!usable(bundle)) throw new DataError('db', new Error('bundle is missing its brand or a food its plan uses'));
     return bundle;
   }
@@ -150,7 +157,31 @@ function createData(supabase, storage = localStorage){
     await get(supabase.from('swap_flags').update({resolved_at: new Date().toISOString()}).eq('id', id));
   }
 
-  return { fetchBundle, boot, cached, save, clear, me, listClients, flagSwap, listFlags, resolveFlag };
+  /* ---------- own products and dishes (step 4, 2026-10-31) ----------
+     Writes need a connection: offline they throw DataError('offline') and
+     change nothing, and the page says so. RLS lets a person write only their
+     own rows. */
+  async function put(q){
+    try { return await get(q); }
+    catch (e){ throw e.kind === 'network' ? new DataError('offline', e.cause) : e; }
+  }
+  async function upsert(table, id, row){
+    if (id){ await put(supabase.from(table).update(row).eq('id', id)); return id; }
+    const r = await put(supabase.from(table).insert({...row, user_id: await myId()}).select('id').single());
+    return r.id;
+  }
+  async function saveProduct({id, name, kcal, p, f, c, ml = false}){
+    return upsert('client_products', id, {name, kcal, p, f, c, ml});
+  }
+  async function saveDish({id, name, emoji = '🍽️', slot, parts}){
+    return upsert('client_dishes', id, {name, emoji, slot, parts, updated_at: new Date().toISOString()});
+  }
+  async function deleteDish(id){
+    await put(supabase.from('client_dishes').delete().eq('id', id));
+  }
+
+  return { fetchBundle, boot, cached, save, clear, me, listClients, flagSwap, listFlags, resolveFlag,
+    saveProduct, saveDish, deleteDish };
 }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { createData, isNetworkError };
