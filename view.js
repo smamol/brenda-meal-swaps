@@ -92,8 +92,7 @@ function mountPlan(root, bundle, opts = {}){
       if (dish && opts.onEditDish) btn += `<button class="dish-edit" type="button" data-dish="${esc(sw.id)}">Edit</button>`;
       const name = dish ? sw.parts.map(p => esc(p.label) + (p.fromLabel ? ' <span class="from-label">from label</span>' : '')).join(' + ') : sw.label;
       const delta = sw.byCal ? deltaLine(sw, 0) + ' · matched on calories'
-        : dish ? deltaLine(sw, 0) + ' · matched on calories · your own'
-        : sw.own ? deltaLine(sw, 0) + ' · your own' : deltaLine(sw, basis);
+        : dish ? deltaLine(sw, 0) + ' · matched on calories · your own' : deltaLine(sw, basis);
       return `<div class="swap"${dish ? ` data-dish="${esc(sw.id)}"` : ''}><div class="swap-em">${esc(sw.e)}</div><div class="swap-txt">
     <div class="swap-name">${name}</div>
     <div class="swap-d">${delta}</div>${btn}</div></div>`;

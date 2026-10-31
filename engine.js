@@ -123,16 +123,16 @@ function createEngine(FOODS, POOLS, person = {}){
   }
   /* Whole-meal alternatives (meal.mealSwaps): curated combos that replace the
      entire snack — e.g. protein pancakes + a banana — under the same rule on
-     calories and every macro; one that doesn't fit isn't shown, unless it is
-     the person's own (own:true, Sandy's pancakes, 2026-10-31). */
+     calories and every macro; one that doesn't fit isn't shown. A client's
+     own dishes are separate (ownDishAlts, below). */
   function mealSwapAlts(meal){
     if (!meal.mealSwaps) return [];
     const base = mealMacros(meal);
     return meal.mealSwaps.map(ms => {
       const m = [0,0,0,0];
       for (const p of ms.parts){ const v = ingMacros(p); for (let i=0;i<4;i++) m[i]+=v[i]; }
-      return {e: ms.e, label: ms.parts.map(ingLabel).join(' + '), m, d: m.map((x,i)=>x-base[i]), parts: ms.parts, own: !!ms.own};
-    }).filter(alt => alt.own || fits(base, alt.m));
+      return {e: ms.e, label: ms.parts.map(ingLabel).join(' + '), m, d: m.map((x,i)=>x-base[i]), parts: ms.parts};
+    }).filter(alt => fits(base, alt.m));
   }
   /* A client's own dishes (step 4, 2026-10-31; docs/plans/2026-10-31-step4-own-dishes-design.md).
      person.dishes: [{id, name, emoji, slot:{type,title}, parts}], each part a
