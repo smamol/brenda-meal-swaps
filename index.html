@@ -187,6 +187,10 @@
   .dish-link{border:none; background:none; cursor:pointer; font:inherit; font-size:13px; color:var(--muted); text-decoration:underline; margin:6px 8px 0 0}
   .dish-link.danger{color:var(--fat)} .dish-link:disabled{opacity:.5}
   .dish-actions{margin-top:12px} .dish-warn{color:var(--fat); font-size:13px} .dish-msg{color:var(--fat); font-size:13px; min-height:1em}
+  .dish-del{display:inline-block; margin:5px 0 0 12px; font-family:var(--n8-font-ui); font-size:11px; color:var(--muted)}
+  .dish-del button{padding:0; margin-right:8px; border:none; background:none; cursor:pointer; font:inherit;
+    color:var(--muted2); text-decoration:underline; text-underline-offset:2px}
+  .dish-del .dish-del-yes{color:var(--fat)} .dish-del-msg{color:var(--fat)}
   .from-label{font-family:var(--n8-font-ui); font-size:10px; text-transform:uppercase; letter-spacing:.06em;
     color:var(--muted2); border:1px solid var(--line); border-radius:4px; padding:0 4px; white-space:nowrap}
   /* brand: nomad8 (deploy.js) */
@@ -208,17 +212,17 @@
      kept on the phone for offline use (data.js); view.js draws them with the
      shared engine. supabase-js ships with the site, never from a CDN.
      ?v= must match APP_VERSION below. -->
-<script src="vendor/supabase.js?v=2026-10-31.3"></script>
-<script src="config.js?v=2026-10-31.3"></script>
-<script src="engine.js?v=2026-10-31.3"></script>
-<script src="view.js?v=2026-10-31.3"></script>
-<script src="data.js?v=2026-10-31.3"></script>
-<script src="signin.js?v=2026-10-31.3"></script>
-<script src="coach.js?v=2026-10-31.3"></script>
-<script src="dishform.js?v=2026-10-31.3"></script>
+<script src="vendor/supabase.js?v=2026-10-31.4"></script>
+<script src="config.js?v=2026-10-31.4"></script>
+<script src="engine.js?v=2026-10-31.4"></script>
+<script src="view.js?v=2026-10-31.4"></script>
+<script src="data.js?v=2026-10-31.4"></script>
+<script src="signin.js?v=2026-10-31.4"></script>
+<script src="coach.js?v=2026-10-31.4"></script>
+<script src="dishform.js?v=2026-10-31.4"></script>
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-10-31.3';
+const APP_VERSION = '2026-10-31.4';
 
 /* ---------- sign-in, then this person's plan ----------
    The phone's copy shows at once; the fresh one replaces it when it arrives,
@@ -238,7 +242,8 @@ function show(bundle, status, {fresh = false, signIn = false} = {}){
   const key = JSON.stringify(bundle) + '|' + (status || '');
   if (key !== onScreen){
     try { mountPlan(app, bundle, {status, onAddDish: meal => dishForm(bundle, {meal}),
-      onEditDish: id => dishForm(bundle, {dish: (bundle.dishes || []).find(d => d.id === id)})}); }
+      onEditDish: id => dishForm(bundle, {dish: (bundle.dishes || []).find(d => d.id === id)}),
+      onDeleteDish: async id => { await D.deleteDish(id); onScreen = null; start(); }}); }
     catch (e){ onScreen = null; return false; }
     onScreen = key;
   }

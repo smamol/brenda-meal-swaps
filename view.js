@@ -62,6 +62,8 @@ function mountPlan(root, bundle, opts = {}){
       products: bundle.products, dishes: bundle.dishes});
   /* whole-meal swaps: the plan's own, then the client's own dishes (step 4) */
   const wholeAlts = meal => [...mealSwapAlts(meal), ...ownDishAlts(meal)];
+  /* Delete on the dish row, confirmed in the row (Sandy, 2026-10-31); own view only */
+  const delBtn = id => opts.onDeleteDish ? `<span class="dish-del" data-dish="${esc(id)}"><button class="dish-delete" type="button">Delete</button></span>` : '';
   const addBtn = () => opts.onAddDish ? `<button class="dish-add" type="button">Add my own dish</button>` : '';
   const DAYS = PLAN.days.map(d => ({...d, meals: d.meals.map(k => PLAN.meals[k])}));
   for (const [k, v] of Object.entries((brand && brand.vars) || {})) root.style.setProperty(k, v);
@@ -90,6 +92,7 @@ function mountPlan(root, bundle, opts = {}){
       /* a client's own dish (step 4): its parts, own products marked "from label" */
       const dish = sw.id != null;
       if (dish && opts.onEditDish) btn += `<button class="dish-edit" type="button" data-dish="${esc(sw.id)}">Edit</button>`;
+      if (dish) btn += delBtn(sw.id);
       const name = dish ? sw.parts.map(p => esc(p.label) + (p.fromLabel ? ' <span class="from-label">from label</span>' : '')).join(' + ') : sw.label;
       const delta = sw.byCal ? deltaLine(sw, 0) + ' · matched on calories'
         : dish ? deltaLine(sw, 0) + ' · matched on calories · your own' : deltaLine(sw, basis);
@@ -195,7 +198,7 @@ function mountPlan(root, bundle, opts = {}){
         <div class="swaps-label">Your dishes not showing</div>${hidden.map(d => `<div class="swap">
         <div class="swap-em">${esc(d.emoji)}</div><div class="swap-txt"><div class="swap-name">${esc(d.name)}</div>
         <div class="swap-d">${dishKnown(d) ? 'Its meal has gone from your plan' : 'A food in it is no longer available'}</div>
-        <button class="dish-edit" type="button" data-dish="${esc(d.id)}">Edit</button></div></div>`).join('')}</div>`);
+        <button class="dish-edit" type="button" data-dish="${esc(d.id)}">Edit</button>${delBtn(d.id)}</div></div>`).join('')}</div>`);
     }
     mealsEl.querySelectorAll('.ing.swappable .ing-line').forEach(h=>{
       h.addEventListener('click',()=>h.parentElement.classList.toggle('open'));
@@ -209,6 +212,27 @@ function mountPlan(root, bundle, opts = {}){
     mealsEl.querySelectorAll('.meal').forEach((el, mi)=>{
       const b = el.querySelector('.dish-add');
       if (b) b.addEventListener('click', e=>{ e.stopPropagation(); opts.onAddDish(day.meals[mi]); });
+    });
+    mealsEl.querySelectorAll('.dish-del').forEach(wrap=>{
+      const ask = () => {
+        wrap.innerHTML = `Delete this dish? <button class="dish-del-yes" type="button">Delete</button> <button class="dish-del-no" type="button">Keep it</button>`;
+        wrap.querySelector('.dish-del-no').addEventListener('click', e=>{ e.stopPropagation(); idle(); });
+        wrap.querySelector('.dish-del-yes').addEventListener('click', async e=>{
+          e.stopPropagation();
+          wrap.textContent = 'Deleting…';
+          try { await opts.onDeleteDish(wrap.dataset.dish); }
+          catch (err){
+            idle();
+            wrap.insertAdjacentHTML('beforeend', ` <span class="dish-del-msg">${err && err.kind === 'offline'
+              ? 'You need a connection to delete a dish.' : 'Something went wrong. Try again'}</span>`);
+          }
+        });
+      };
+      const idle = () => {
+        wrap.innerHTML = '<button class="dish-delete" type="button">Delete</button>';
+        wrap.querySelector('.dish-delete').addEventListener('click', e=>{ e.stopPropagation(); ask(); });
+      };
+      idle();
     });
     mealsEl.querySelectorAll('.dish-edit').forEach(b=>{
       b.addEventListener('click', e=>{ e.stopPropagation(); opts.onEditDish(b.dataset.dish); });
