@@ -20,7 +20,8 @@ const STYLE = {
   dinner:   {em:"🌙", bg:"#F9EAE7", fg:"#082B35"},
   dessert:  {em:"🍫", bg:"#FBF2D5", fg:"#082B35"},
 };
-/* every swap is within 10% (or 2 g) on calories, protein, fat and carbs (Sandy, 2026-10-23) */
+/* every swap is within 10% (or 4 g) on calories, protein, fat and carbs (Sandy, 2026-10-23),
+   except pasta and lean beef, offered everywhere and matched on calories (2026-10-31) */
 const SWAP_RULE = 'all within 10%';
 const DAY_KEY = 'mealday-name';
 
@@ -82,7 +83,7 @@ function mountPlan(root, bundle, opts = {}){
       }
       return `<div class="swap"><div class="swap-em">${sw.e}</div><div class="swap-txt">
     <div class="swap-name">${sw.label}</div>
-    <div class="swap-d">${deltaLine(sw, basis)}</div>${btn}</div></div>`;
+    <div class="swap-d">${sw.byCal ? deltaLine(sw, 0) + ' · matched on calories' : sw.own ? deltaLine(sw, 0) + ' · your own' : deltaLine(sw, basis)}</div>${btn}</div></div>`;
     }).join('');
   }
 

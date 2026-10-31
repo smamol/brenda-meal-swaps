@@ -18,7 +18,8 @@ function createEngine(FOODS, POOLS, person = {}){
   for (const [name, pool] of Object.entries(POOLS)){
     const keys = pool.keys.filter(k => !dislikes.has(k));
     for (const br of person.brands || []) if (br.pool === name && !keys.includes(br.k)) keys.push(br.k);
-    effectivePools[name] = {...pool, keys};
+    const always = (pool.always || []).filter(k => !dislikes.has(k));
+    effectivePools[name] = {...pool, keys, always};
   }
   function ingAmountG(ing){
     if (ing.g != null) return ing.g;
@@ -100,34 +101,38 @@ function createEngine(FOODS, POOLS, person = {}){
     if (!target) return [];
     const form = FOODS[ing.k].form;
     const out = [];
-    for (const k of pool.keys){
+    for (const k of new Set([...pool.keys, ...pool.always])){
       if (k === ing.k && !ing.generic) continue;   /* generic slots list their own base food back, rendered "as planned" */
-      const F = FOODS[k], per = F.v[pool.b];
+      const F = FOODS[k];
       if (form && F.form && F.form !== form) continue;   /* raw line → raw meats only, cooked → cooked */
+      /* pool.always: offered on every line, sized on calories alone, no fit check (Sandy, 2026-10-31) */
+      const byCal = pool.always.includes(k) && k !== ing.k;
+      const b = byCal ? 0 : pool.b, per = F.v[b];
       if (!per) continue;
-      const need = target / per * 100;
+      const need = base[b] / per * 100;
       let best = null;
       for (const [g, label] of portions(F, k, need)){
-        const m = scaleV(F.v, g), score = miss(base, m);
+        const m = scaleV(F.v, g), score = byCal ? Math.abs(m[0] - base[0]) : miss(base, m);
         if (!best || score < best.score - 1e-9 || (Math.abs(score - best.score) <= 1e-9 && Math.abs(g - need) < Math.abs(best.g - need)))
           best = {g, label, m, score};
       }
-      if (!best || !fits(base, best.m)) continue;
-      out.push({k, e:F.e, label:best.label, m:best.m, d:best.m.map((x,i)=>x-base[i]), self:k===ing.k});
+      if (!best || (!byCal && !fits(base, best.m))) continue;
+      out.push({k, e:F.e, label:best.label, m:best.m, d:best.m.map((x,i)=>x-base[i]), self:k===ing.k, byCal});
     }
     return out;
   }
   /* Whole-meal alternatives (meal.mealSwaps): curated combos that replace the
      entire snack — e.g. protein pancakes + a banana — under the same rule on
-     calories and every macro; one that doesn't fit isn't shown. */
+     calories and every macro; one that doesn't fit isn't shown, unless it is
+     the person's own (own:true, Sandy's pancakes, 2026-10-31). */
   function mealSwapAlts(meal){
     if (!meal.mealSwaps) return [];
     const base = mealMacros(meal);
     return meal.mealSwaps.map(ms => {
       const m = [0,0,0,0];
       for (const p of ms.parts){ const v = ingMacros(p); for (let i=0;i<4;i++) m[i]+=v[i]; }
-      return {e: ms.e, label: ms.parts.map(ingLabel).join(' + '), m, d: m.map((x,i)=>x-base[i]), parts: ms.parts};
-    }).filter(alt => fits(base, alt.m));
+      return {e: ms.e, label: ms.parts.map(ingLabel).join(' + '), m, d: m.map((x,i)=>x-base[i]), parts: ms.parts, own: !!ms.own};
+    }).filter(alt => alt.own || fits(base, alt.m));
   }
   return { effectivePools, scaleV, ingAmountG, ingMacros, mealMacros, fmtU, unitLabel, roundW, weightTag, ingLabel, computeSwaps, mealSwapAlts, fits };
 }
