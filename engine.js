@@ -5,7 +5,7 @@
  *
  *   const E = createEngine(FOODS, POOLS, {dislikes, brands});
  *   E.mealMacros(meal)   -> [kcal, p, f, c]
- *   E.computeSwaps(ing)  -> [{k, e, label, m, d, self}, ...]
+ *   E.computeSwaps(ing)  -> [{k, e, label, m, d, byCal}, ...]
  *
  * person (step 2, 2026-10-20) is the one thing that differs per client: foods
  * they don't like leave every group, and their brand products ({k, pool}) join
@@ -102,11 +102,11 @@ function createEngine(FOODS, POOLS, person = {}){
     const form = FOODS[ing.k].form;
     const out = [];
     for (const k of new Set([...pool.keys, ...pool.always])){
-      if (k === ing.k && !ing.generic) continue;   /* generic slots list their own base food back, rendered "as planned" */
+      if (k === ing.k) continue;   /* never the planned food itself (Sandy, 2026-11-02: "don't repeat the planned food as a swap"; generic slots used to list theirs back as "as planned") */
       const F = FOODS[k];
       if (form && F.form && F.form !== form) continue;   /* raw line → raw meats only, cooked → cooked */
       /* pool.always: offered on every line, sized on calories alone, no fit check (Sandy, 2026-10-31) */
-      const byCal = pool.always.includes(k) && k !== ing.k;
+      const byCal = pool.always.includes(k);
       const b = byCal ? 0 : pool.b, per = F.v[b];
       if (!per) continue;
       const need = base[b] / per * 100;
@@ -117,7 +117,7 @@ function createEngine(FOODS, POOLS, person = {}){
           best = {g, label, m, score};
       }
       if (!best || (!byCal && !fits(base, best.m))) continue;
-      out.push({k, e:F.e, label:best.label, m:best.m, d:best.m.map((x,i)=>x-base[i]), self:k===ing.k, byCal});
+      out.push({k, e:F.e, label:best.label, m:best.m, d:best.m.map((x,i)=>x-base[i]), byCal});
     }
     return out;
   }

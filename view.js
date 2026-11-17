@@ -35,7 +35,6 @@ function ingSub(m){
   return `${R(m[0])} cal · ${R(m[1])}P · ${R(m[2])}F · ${R(m[3])}C`;
 }
 function deltaLine(swap, basis){
-  if (swap.self) return 'as planned';   /* generic slot listing its own base */
   const DEF = [[0,'m-cal','cal',''],[1,'m-pro','P','g '],[2,'m-fat','F','g '],[3,'m-carb','C','g ']];
   const parts = [];
   const [bi, bcls, bltr, bunit] = DEF[basis];
