@@ -1,0 +1,23 @@
+{
+ "name": "Meal Swaps",
+ "short_name": "Meal Swaps",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#FEF2CF",
+ "theme_color": "#FEF2CF",
+ "icons": [
+  {
+   "src": "icon-n8.png?v=2026-11-22.5",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "apple-touch-icon-n8.png?v=2026-11-22.5",
+   "sizes": "180x180",
+   "type": "image/png",
+   "purpose": "any"
+  }
+ ]
+}
