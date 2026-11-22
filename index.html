@@ -7,9 +7,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Meal Swaps">
 <meta name="theme-color" content="#FEF2CF">
-<link rel="apple-touch-icon" href="apple-touch-icon-n8.png?v=2026-11-22.7">
-<link rel="icon" type="image/png" href="icon-n8.png?v=2026-11-22.7">
-<link rel="manifest" href="manifest.webmanifest?v=2026-11-22.7">
+<link rel="apple-touch-icon" href="apple-touch-icon-n8.png?v=2026-11-22.8">
+<link rel="icon" type="image/png" href="icon-n8.png?v=2026-11-22.8">
+<link rel="manifest" href="manifest.webmanifest?v=2026-11-22.8">
 <title>Meal Swaps</title>
 <style>
   /* Licensed Nomad8 webfonts. Drop the files into fonts/ and these take over;
@@ -48,6 +48,7 @@
   h1{font-family:var(--n8-font-serif); font-size:32px; font-weight:500; letter-spacing:0;
     margin:8px 0 4px; display:flex; align-items:center; gap:12px}
   .logo{width:34px; height:34px; flex:0 0 auto}
+  header h1{cursor:pointer}
   .sub{color:var(--muted); font-size:15px; margin:0 0 14px}
 
   /* tabs — Nomad8 pill buttons */
@@ -240,19 +241,19 @@
      kept on the phone for offline use (data.js); view.js draws them with the
      shared engine. supabase-js ships with the site, never from a CDN.
      ?v= must match APP_VERSION below. -->
-<script src="vendor/supabase.js?v=2026-11-22.7"></script>
-<script src="config.js?v=2026-11-22.7"></script>
-<script src="engine.js?v=2026-11-22.7"></script>
-<script src="view.js?v=2026-11-22.7"></script>
-<script src="data.js?v=2026-11-22.7"></script>
-<script src="signin.js?v=2026-11-22.7"></script>
-<script src="coach.js?v=2026-11-22.7"></script>
-<script src="barcode.js?v=2026-11-22.7"></script>
-<script src="foodform.js?v=2026-11-22.7"></script>
-<script src="checkins.js?v=2026-11-22.7"></script>
+<script src="vendor/supabase.js?v=2026-11-22.8"></script>
+<script src="config.js?v=2026-11-22.8"></script>
+<script src="engine.js?v=2026-11-22.8"></script>
+<script src="view.js?v=2026-11-22.8"></script>
+<script src="data.js?v=2026-11-22.8"></script>
+<script src="signin.js?v=2026-11-22.8"></script>
+<script src="coach.js?v=2026-11-22.8"></script>
+<script src="barcode.js?v=2026-11-22.8"></script>
+<script src="foodform.js?v=2026-11-22.8"></script>
+<script src="checkins.js?v=2026-11-22.8"></script>
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-11-22.7';
+const APP_VERSION = '2026-11-22.8';
 
 /* ---------- sign-in, then this person's plan ----------
    The phone's copy shows at once; the fresh one replaces it when it arrives,
@@ -289,8 +290,23 @@ function foodForm(bundle, {from = null, food = null}){
   view++;
   onScreen = null;
   window.scrollTo({top: 0});
-  mountFoodForm(app, {bundle, data: D, from, food, onDone: () => { onScreen = null; start(); }});
+  openForm = mountFoodForm(app, {bundle, data: D, from, food, onDone: () => { openForm = null; onScreen = null; start(); }});
 }
+/* the name at the top always leads back to the main screen: the person's own
+   plan, or the client list for a coach without one (Sandy, 2026-11-22). An
+   open food form is dropped unsaved. Not while signing in. */
+let openForm = null;
+const home = document.querySelector('header h1');
+home.setAttribute('role', 'link'); home.tabIndex = 0;
+function goHome(){
+  if (app.querySelector('.signin input')) return;
+  if (openForm){ openForm.close(); openForm = null; }
+  onScreen = null;
+  window.scrollTo({top: 0});
+  start();
+}
+home.addEventListener('click', goHome);
+home.addEventListener('keydown', e => { if (e.key === 'Enter') goHome(); });
 function message(text, retry){
   onScreen = null;
   app.innerHTML = `<div class="signin"><p>${text}</p>${retry ? '<button type="button" class="retry">Try again</button>' : ''}</div>`;

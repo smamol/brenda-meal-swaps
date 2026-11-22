@@ -2,7 +2,7 @@
  * foodform.js — add, edit and delete a client's own food (2026-11-22).
  * Pitch: docs/plans/2026-11-22-own-pool-foods-pitch.md. Replaces dishform.js.
  *
- *   mountFoodForm(root, {bundle, data, food?, from?, onDone(changed)})
+ *   mountFoodForm(root, {bundle, data, food?, from?, onDone(changed)}) -> {close()}
  *
  * An own food joins one or more of the swap groups on the client's plan and is
  * offered on those lines wherever it fits the normal 10% / 4 g rule. Its
@@ -313,6 +313,13 @@ function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: do
     window.addEventListener('online', onNet);
     window.addEventListener('offline', onNet);
   }
+  /* close(): the page left the form some other way (the header's way home);
+     nothing is saved, the camera stops and the form never redraws again */
+  return { close(){
+    live = false;
+    stopCamera();
+    if (typeof window !== 'undefined'){ window.removeEventListener('online', onNet); window.removeEventListener('offline', onNet); }
+  } };
 }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { GROUP_NAMES, groupName, pickerFoods, planGroups, labelOff, draftFood, mountFoodForm };
