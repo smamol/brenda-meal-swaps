@@ -11,7 +11,10 @@
  * counted in grams or in a unit of a given weight ("slice, 45 g"). from =
  * {meal, ing} when opened from a line: that line's group is preselected and
  * the preview shows how the food lands there. Saving and deleting need a
- * connection; offline the form says so and changes nothing.
+ * connection; offline the form says so and changes nothing. A label food can
+ * be started from its barcode (barcode.js, 2026-11-22): the lookup fills the
+ * figures, and they can't be saved until the person says they've checked
+ * them against the label.
  */
 
 /* what the client calls each group, for the add button and the checkboxes */
@@ -58,13 +61,15 @@ function draftFood(state, FOODS){
     recipe: state.source === 'recipe' ? recipe : null, v};
 }
 
-function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: done}){
+function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: done,
+  scan = {start: (...a) => startScan(...a), lookup: code => lookupBarcode(code)}}){
   /* the form listens for the connection coming and going; once it closes it
      must stop, or it would redraw itself over the plan */
   let live = true;
   const onNet = () => { if (live) draw(); };
   function onDone(changed){
     live = false;
+    stopCamera();
     if (typeof window !== 'undefined'){ window.removeEventListener('online', onNet); window.removeEventListener('offline', onNet); }
     done(changed);
   }
@@ -85,7 +90,60 @@ function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: do
     baked: o && o.recipe && o.recipe.baked > 0 ? o.recipe.baked : '',
     label: o && o.source === 'label' ? {kcal: o.v[0], p: o.v[1], f: o.v[2], c: o.v[3], ml: !!o.ml} : {kcal: '', p: '', f: '', c: '', ml: false},
     search: '', confirmDelete: false, msg: '', busy: false,
+    /* barcode: scanning = the camera is open, looking = waiting on the lookup,
+       scanned = the figures came from a lookup and checked says they've been
+       compared with the label */
+    scanning: false, looking: false, typing: false, code: '', scanMsg: '', scanned: null, checked: false,
   };
+  /* the camera's video element outlives redraws, or each one would stop the picture */
+  let video = null, stopScan = null;
+  function stopCamera(){
+    if (stopScan) stopScan();
+    stopScan = null; video = null; state.scanning = false;
+  }
+  function openCamera(){
+    stopCamera();
+    state.scanning = true; state.scanMsg = '';
+    video = document.createElement('video');
+    video.setAttribute('playsinline', ''); video.muted = true;
+    stopScan = scan.start(video, code => look(code), () => {
+      stopCamera();
+      state.scanMsg = "Couldn't open the camera. Type the number under the barcode instead.";
+      state.typing = true;
+      if (live) draw();
+    });
+  }
+  async function look(text){
+    const code = cleanBarcode(text);
+    stopCamera();
+    if (!code){ state.scanMsg = 'A barcode has 8, 12, 13 or 14 digits.'; return draw(); }
+    state.looking = true; state.code = code; state.scanMsg = ''; draw();
+    let r = null, why = '';
+    try { r = await scan.lookup(code); }
+    catch (e){ why = e && e.kind === 'offline' ? 'You need a connection to look up a barcode.' : "The lookup didn't work. Try again, or type the figures from the label."; }
+    if (!live) return;
+    state.looking = false;
+    if (r && r.found){
+      Object.assign(state.label, r.label);
+      if (r.ml && state.counted === 'g') state.label.ml = true;
+      if (!state.name.trim() && r.name) state.name = r.name;
+      state.scanned = {code}; state.checked = false; state.typing = false;
+      state.scanMsg = r.missing.length
+        ? `Open Food Facts has only some of the figures for barcode ${code}. Add the rest from the label and check the ones filled in.`
+        : `Filled in from Open Food Facts for barcode ${code}. It can be wrong or out of date, so check each figure against the label.`;
+    } else state.scanMsg = why || `Barcode ${code} isn't in Open Food Facts. Type the figures from the label.`;
+    draw();
+  }
+  function scanBlock(offline){
+    if (state.looking) return '<p class="muted">Looking up the barcode…</p>';
+    if (state.scanning) return `<div class="food-scan"><div class="food-scan-video"></div>
+      <p class="muted">Hold the barcode in front of the camera.</p>
+      <button type="button" class="food-link" data-act="scan-stop">Close the camera</button></div>`;
+    return `<p><button type="button" class="food-add" data-act="scan"${offline ? ' disabled' : ''}>Scan the barcode</button>
+        ${state.typing ? '' : `<button type="button" class="food-link" data-act="scan-type"${offline ? ' disabled' : ''}>or type its number</button>`}</p>
+      ${state.typing ? `<label>Barcode number <input name="code" inputmode="numeric" autocomplete="off" value="${h(state.code)}"></label>
+        <button type="button" class="food-link" data-act="lookup"${offline ? ' disabled' : ''}>Look it up</button>` : ''}`;
+  }
 
   function result(){
     const d = draftFood(state, FOODS);
@@ -144,10 +202,13 @@ function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: do
         <label>Add an ingredient <input name="search" value="${h(state.search)}" placeholder="oats, flour…" autocomplete="off"></label>
         ${hits.map(f => `<button type="button" class="food-hit" data-k="${h(f.k)}">${h(f.e)} ${h(f.l)}</button>`).join('')}
         <label>Weight once made <input name="baked" class="short" type="number" inputmode="decimal" min="0" step="any" value="${h(state.baked)}"> g</label>`
-      : `<p class="muted">From the nutrition panel, per 100 ${L.ml ? 'ml' : 'g'}.</p>
+      : `${scanBlock(offline)}
+        ${state.scanMsg ? `<p class="food-scan-msg">${h(state.scanMsg)}</p>` : ''}
+        <p class="muted">From the nutrition panel, per 100 ${L.ml ? 'ml' : 'g'}.</p>
         ${['kcal', 'p', 'f', 'c'].map(k => `<label>${{kcal: 'Calories (kcal)', p: 'Protein (g)', f: 'Fat (g)', c: 'Carbs (g)'}[k]}
           <input class="short" type="number" inputmode="decimal" min="0" step="any" name="l-${k}" value="${h(L[k])}"></label>`).join('')}
-        ${state.counted === 'g' ? `<label><input type="checkbox" name="l-ml"${L.ml ? ' checked' : ''}> Measured in ml</label>` : ''}`}
+        ${state.counted === 'g' ? `<label><input type="checkbox" name="l-ml"${L.ml ? ' checked' : ''}> Measured in ml</label>` : ''}
+        ${state.scanned ? `<label class="food-checked"><input type="checkbox" name="checked"${state.checked ? ' checked' : ''}> I've checked these against the label</label>` : ''}`}
       <div class="food-result-slot">${result()}</div>
       <div class="food-warn-slot">${labelWarn()}</div>
       <div class="food-preview-slot">${preview()}</div>
@@ -161,6 +222,8 @@ function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: do
           : `<button type="button" class="food-link danger" data-act="delete"${offline ? ' disabled' : ''}>Delete this food</button>`) : ''}
       </div></div>`;
     wire();
+    const slot = root.querySelector('.food-scan-video');
+    if (slot && video) slot.appendChild(video);
   }
 
   /* field edits refresh only what depends on them: redrawing the whole form
@@ -178,7 +241,7 @@ function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: do
       if (e.target.checked) state.pools.add(e.target.value); else state.pools.delete(e.target.value); refresh();
     }));
     root.querySelectorAll('[name=counted]').forEach(b => b.addEventListener('change', e => { state.counted = e.target.value; draw(); }));
-    root.querySelectorAll('[name=source]').forEach(b => b.addEventListener('change', e => { state.source = e.target.value; draw(); }));
+    root.querySelectorAll('[name=source]').forEach(b => b.addEventListener('change', e => { stopCamera(); state.source = e.target.value; draw(); }));
     for (const k of ['unitName', 'unitG', 'baked']){
       const el = $(`[name=${k}]`); if (el) el.addEventListener('input', e => { state[k] = e.target.value; refresh(); });
     }
@@ -200,6 +263,10 @@ function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: do
     }
     const ml = $('[name=l-ml]');
     if (ml) ml.addEventListener('change', e => { state.label.ml = e.target.checked; draw(); });
+    const code = $('[name=code]');
+    if (code) code.addEventListener('input', e => { state.code = e.target.value; });
+    const checked = $('[name=checked]');
+    if (checked) checked.addEventListener('change', e => { state.checked = e.target.checked; });
     root.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => act(b.dataset.act)));
   }
 
@@ -212,11 +279,16 @@ function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: do
       if (!state.parts.length) return 'Add the ingredients.';
       if (state.parts.some(p => !FOODS[p.food])) return 'Remove the ingredient that is no longer available.';
     } else if (!d.v) return 'Add all four numbers from the label.';
+    else if (state.scanned && !state.checked) return 'Check the figures against the label, then tick the box.';
     if (!d.v || !(d.v[0] > 0)) return 'This food has no calories. Check the amounts.';
     return '';
   }
   async function act(what){
     if (what === 'cancel') return onDone(false);
+    if (what === 'scan'){ openCamera(); return draw(); }
+    if (what === 'scan-stop'){ stopCamera(); return draw(); }
+    if (what === 'scan-type'){ state.typing = true; draw(); const c = root.querySelector('[name=code]'); if (c) c.focus(); return; }
+    if (what === 'lookup') return look(state.code);
     if (what === 'delete'){ state.confirmDelete = true; return draw(); }
     if (what === 'delete-no'){ state.confirmDelete = false; return draw(); }
     if (what === 'delete-yes') return write(() => data.deleteFood(food));

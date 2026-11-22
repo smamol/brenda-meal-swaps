@@ -7,9 +7,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Meal Swaps">
 <meta name="theme-color" content="#FEF2CF">
-<link rel="apple-touch-icon" href="apple-touch-icon-n8.png?v=2026-11-22.5">
-<link rel="icon" type="image/png" href="icon-n8.png?v=2026-11-22.5">
-<link rel="manifest" href="manifest.webmanifest?v=2026-11-22.5">
+<link rel="apple-touch-icon" href="apple-touch-icon-n8.png?v=2026-11-22.6">
+<link rel="icon" type="image/png" href="icon-n8.png?v=2026-11-22.6">
+<link rel="manifest" href="manifest.webmanifest?v=2026-11-22.6">
 <title>Meal Swaps</title>
 <style>
   /* Licensed Nomad8 webfonts. Drop the files into fonts/ and these take over;
@@ -191,6 +191,11 @@
   .food-actions{margin-top:12px} .food-warn{color:var(--fat); font-size:13px} .food-msg{color:var(--fat); font-size:13px; min-height:1em}
   .from-label{font-family:var(--n8-font-ui); font-size:10px; text-transform:uppercase; letter-spacing:.06em;
     color:var(--muted2); border:1px solid var(--line); border-radius:4px; padding:0 4px; white-space:nowrap}
+  .food-scan-video video{display:block; width:100%; max-height:240px; object-fit:cover; background:#000; border-radius:8px}
+  .food-scan{margin:10px 0} .food-scan-msg{margin:8px 0; padding:8px 10px; background:var(--n8-wash-yellow); font-size:13px}
+  .foodform .food-add{display:inline-block; margin:6px 10px 0 0; background:none; cursor:pointer; font:inherit; font-size:14px}
+  .foodform .food-add:disabled{opacity:.5}
+  .food-checked{font-weight:600}
 
   /* check-in: today's tap, the streak and 28 days of dots (step 5) */
   .checkin{background:var(--card); border:1px solid var(--line); padding:12px 14px; margin:0 0 14px;
@@ -228,18 +233,19 @@
      kept on the phone for offline use (data.js); view.js draws them with the
      shared engine. supabase-js ships with the site, never from a CDN.
      ?v= must match APP_VERSION below. -->
-<script src="vendor/supabase.js?v=2026-11-22.5"></script>
-<script src="config.js?v=2026-11-22.5"></script>
-<script src="engine.js?v=2026-11-22.5"></script>
-<script src="view.js?v=2026-11-22.5"></script>
-<script src="data.js?v=2026-11-22.5"></script>
-<script src="signin.js?v=2026-11-22.5"></script>
-<script src="coach.js?v=2026-11-22.5"></script>
-<script src="foodform.js?v=2026-11-22.5"></script>
-<script src="checkins.js?v=2026-11-22.5"></script>
+<script src="vendor/supabase.js?v=2026-11-22.6"></script>
+<script src="config.js?v=2026-11-22.6"></script>
+<script src="engine.js?v=2026-11-22.6"></script>
+<script src="view.js?v=2026-11-22.6"></script>
+<script src="data.js?v=2026-11-22.6"></script>
+<script src="signin.js?v=2026-11-22.6"></script>
+<script src="coach.js?v=2026-11-22.6"></script>
+<script src="barcode.js?v=2026-11-22.6"></script>
+<script src="foodform.js?v=2026-11-22.6"></script>
+<script src="checkins.js?v=2026-11-22.6"></script>
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-11-22.5';
+const APP_VERSION = '2026-11-22.6';
 
 /* ---------- sign-in, then this person's plan ----------
    The phone's copy shows at once; the fresh one replaces it when it arrives,
