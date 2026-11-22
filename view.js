@@ -24,8 +24,10 @@ const STYLE = {
   dessert:  {em:"🍫", bg:"#FEF2CF", fg:"#082B35"},
 };
 /* every swap is within 10% (or 4 g) on calories, protein, fat and carbs (Sandy, 2026-10-23),
-   except pasta and lean beef, offered everywhere and matched on calories (2026-10-31) */
+   except pasta, rice and lean beef, offered everywhere and matched on calories
+   (2026-10-31); a list holding one of those says so in its heading */
 const SWAP_RULE = 'all within 10%';
+const swapRule = swaps => swaps.some(s => s.byCal) ? 'within 10%, or matched on calories where it says so' : SWAP_RULE;
 const DAY_KEY = 'mealday-name';
 
 const R = x => Math.round(x);
@@ -69,16 +71,16 @@ function mountPlan(root, bundle, opts = {}){
   const DAYS = PLAN.days.map(d => ({...d, meals: d.meals.map(k => PLAN.meals[k])}));
   for (const [k, v] of Object.entries((brand && brand.vars) || {})) root.style.setProperty(k, v);
 
-  /* #checkin is filled by the page for a person's own plan (checkins.js) and
-     stays empty when a coach looks at a client's */
-  root.innerHTML = `<div id="checkin"></div>
-  <div class="tabs" id="tabs"></div>
+  /* #checkin, after the meals, is filled by the page for a person's own plan
+     (checkins.js) and stays empty when a coach looks at a client's */
+  root.innerHTML = `<div class="tabs" id="tabs"></div>
   <div class="targets">
     <h2 id="targets-title">Day Targets</h2>
     <p class="targets-sub" id="targets-sub"></p>
     <div class="stats" id="stats"></div>
   </div>
   <div id="meals"></div>
+  <div id="checkin"></div>
   <footer id="foot"></footer>`;
   const tabsEl = root.querySelector('#tabs'), statsEl = root.querySelector('#stats'),
     mealsEl = root.querySelector('#meals'), titleEl = root.querySelector('#targets-title'),
@@ -139,7 +141,7 @@ function mountPlan(root, bundle, opts = {}){
         const badge = hasSwaps ? `<span class="badge">${fSwaps.length + (mAlts.length ? 1 : 0)} swappable</span>`
                                 : `<span class="badge none">as planned</span>`;
         const ingSwapHtml = fSwaps.map(({ing, swaps})=>
-            `<div class="swaps-label">Swap for — ${SWAP_RULE} — instead of ${ingLabel(ing)}</div>${
+            `<div class="swaps-label">Swap for — ${swapRule(swaps)} — instead of ${ingLabel(ing)}</div>${
             swapRows(swaps, POOLS[ing.pool].b, {day: day.name, meal: meal.title, planned: ingLabel(ing)})}`).join('');
         const mealSwapHtml = mAlts.length ? `<div class="swaps-label">Swap the whole meal — ${SWAP_RULE}</div>${swapRows(mAlts, 0, whole)}` : '';
         const swapHtml = hasSwaps ? `<div class="fold-swaps">${ingSwapHtml}${mealSwapHtml}</div>` : '';
@@ -160,7 +162,7 @@ function mountPlan(root, bundle, opts = {}){
         const add = addBtn(mi, ii, ing.pool);
         const swappable = swaps.length > 0 || !!add;
         const swapHtml = swappable ? `<div class="swaps">${swaps.length ? `
-          <div class="swaps-label">Swap for — ${SWAP_RULE}</div>${
+          <div class="swaps-label">Swap for — ${swapRule(swaps)}</div>${
           swapRows(swaps, POOLS[ing.pool].b, {day: day.name, meal: meal.title, planned: ingLabel(ing)})}` : ''}${add}</div>` : '';
         return `<div class="ing ${swappable?'swappable':''}" data-m="${mi}" data-i="${ii}">
         <div class="ing-line">
@@ -169,7 +171,7 @@ function mountPlan(root, bundle, opts = {}){
             <div class="ing-name">${ingLabel(ing)}</div>
             <div class="ing-sub">${ingSub(ingMacros(ing))}</div>
           </div>
-          ${swappable?'<div class="chev">▼</div>':''}
+          ${swappable?'<div class="chev">▼</div>':'<div class="fixed">as planned</div>'}
         </div>${swapHtml}</div>`;
       }).join('');
       const nSwap = meal.ing.filter(i=>i.pool && computeSwaps(i).length).length;
@@ -233,7 +235,7 @@ function mountPlan(root, bundle, opts = {}){
   let active = 0;
   function buildTabs(){
     tabsEl.innerHTML=DAYS.map((d,i)=>
-      `<div class="tab ${i===active?'active':''}${d.archived?' archived':''}" data-i="${i}">${d.name}<span class="kc">${d.was}</span></div>`
+      `<div class="tab ${i===active?'active':''}${d.archived?' archived':''}" data-i="${i}">${d.name}</div>`
     ).join('');
     tabsEl.querySelectorAll('.tab').forEach(t=>{
       t.addEventListener('click',()=>{

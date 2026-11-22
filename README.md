@@ -2,7 +2,7 @@
 
 My dietitian's meal plan lists exact foods and amounts for each day type: rest days, moderate training days and high training days. Meal Swaps shows that plan on my phone and lets me swap an ingredient for something else I eat and stay close on calories, protein, fat and carbs. I built it for myself, my partner uses it too, and it's set up so a dietitian can give it to all their clients.
 
-Each swappable ingredient opens a list of alternatives within 10% of it on calories, protein, fat and carbs. Where 10% of a macro is less than 4 g, the margin is 4 g, and for calories it's 16, so the 0.6 g of fat in a serve of rice can move by up to 4 g. Pasta and rice are always on the list for the carbs at lunch and dinner, lean beef for the meat, and Vogel's for any bread. Those are matched on calories only, so their protein, fat and carbs can sit further off, and the app says so on the row. An ingredient with no match stays as planned, and the app shows the small differences that remain.
+Each swappable ingredient opens a list of alternatives within 10% of it on calories, protein, fat and carbs. Where 10% of a macro is less than 4 g, the margin is 4 g, and for calories it's 16, so the 0.6 g of fat in a serve of rice can move by up to 4 g. Pasta and rice are always on the list for the carbs at lunch and dinner, and lean beef for the meat. Those are matched on calories only, so their protein, fat and carbs can sit further off, and the app says so on the row. An ingredient with no match stays as planned, and the app shows the small differences that remain.
 
 ## How it works
 

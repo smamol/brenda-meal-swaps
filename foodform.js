@@ -85,7 +85,7 @@ function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: do
     counted: o && o.unit ? 'unit' : 'g',
     unitName: o && o.unit ? o.unit.n : 'slice',
     unitG: o && o.unit ? o.unit.g : '',
-    source: o ? o.source : 'recipe',
+    source: o ? o.source : 'label',   /* most own foods come from a packet (2026-11-22) */
     parts: o && o.recipe ? o.recipe.parts.map(p => ({...p})) : [],
     baked: o && o.recipe && o.recipe.baked > 0 ? o.recipe.baked : '',
     label: o && o.source === 'label' ? {kcal: o.v[0], p: o.v[1], f: o.v[2], c: o.v[3], ml: !!o.ml} : {kcal: '', p: '', f: '', c: '', ml: false},
@@ -191,8 +191,8 @@ function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: do
       ${state.counted === 'unit' ? `<label>Piece <input name="unitName" class="short" value="${h(state.unitName)}"></label>
         <label>Weighs <input name="unitG" class="short" type="number" inputmode="decimal" min="0" step="any" value="${h(state.unitG)}"> g</label>` : ''}
       <h3>Its numbers</h3>
-      <label><input type="radio" name="source" value="recipe"${state.source === 'recipe' ? ' checked' : ''}> From my recipe</label>
       <label><input type="radio" name="source" value="label"${state.source === 'label' ? ' checked' : ''}> From a label</label>
+      <label><input type="radio" name="source" value="recipe"${state.source === 'recipe' ? ' checked' : ''}> From my recipe</label>
       ${state.source === 'recipe' ? `
         <p class="muted">Leave out water and salt. If cooking or baking changes the weight, weigh it once made. Otherwise leave the weight blank.</p>
         ${state.parts.map((p, i) => `<div class="food-part">
