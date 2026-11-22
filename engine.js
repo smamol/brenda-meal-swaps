@@ -14,18 +14,24 @@
  * the same way. Omit person for the shared groups as they are.
  */
 const OWN_PREFIX = 'own:';
-/* a home bake's macros per 100 g: its library ingredients' macros over the
-   baked weight. Water and salt are left out; the baked weight carries the
-   water. null when an ingredient has left the library or nothing is entered. */
+/* a home-made food's macros per 100 g: its library ingredients' macros over
+   its weight once made (recipe.baked, the field's name from the first bread).
+   Water and salt are left out; the made weight carries the water. With no
+   made weight, the ingredients' total is used, for food whose weight cooking
+   doesn't change. null when an ingredient has left the library or nothing is
+   entered. */
 function recipePer100(recipe, LIBRARY){
-  if (!recipe || !(recipe.baked > 0) || !Array.isArray(recipe.parts) || !recipe.parts.length) return null;
+  if (!recipe || !Array.isArray(recipe.parts) || !recipe.parts.length) return null;
   const t = [0, 0, 0, 0];
+  let sum = 0;
   for (const p of recipe.parts){
     const F = LIBRARY[p.food];
     if (!F || !(p.g >= 0)) return null;
     for (let i = 0; i < 4; i++) t[i] += F.v[i] * p.g / 100;
+    sum += p.g;
   }
-  return t.map(x => x * 100 / recipe.baked);
+  const w = recipe.baked > 0 ? recipe.baked : sum;
+  return w > 0 ? t.map(x => x * 100 / w) : null;
 }
 /* an own food's macros per 100: worked out from its recipe each time, so a
    library correction reaches it; the last saved figures when the recipe can't

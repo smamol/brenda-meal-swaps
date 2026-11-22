@@ -6,8 +6,8 @@
  *
  * An own food joins one or more of the swap groups on the client's plan and is
  * offered on those lines wherever it fits the normal 10% / 4 g rule. Its
- * macros come from a recipe (library ingredients in grams over the baked
- * weight; water and salt are left out) or from a label, per 100 g. It can be
+ * macros come from a recipe (library ingredients in grams over the weight
+ * once made, or their total when that's blank; water and salt are left out) or from a label, per 100 g. It can be
  * counted in grams or in a unit of a given weight ("slice, 45 g"). from =
  * {meal, ing} when opened from a line: that line's group is preselected and
  * the preview shows how the food lands there. Saving and deleting need a
@@ -82,7 +82,7 @@ function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: do
     unitG: o && o.unit ? o.unit.g : '',
     source: o ? o.source : 'recipe',
     parts: o && o.recipe ? o.recipe.parts.map(p => ({...p})) : [],
-    baked: o && o.recipe ? o.recipe.baked : '',
+    baked: o && o.recipe && o.recipe.baked > 0 ? o.recipe.baked : '',
     label: o && o.source === 'label' ? {kcal: o.v[0], p: o.v[1], f: o.v[2], c: o.v[3], ml: !!o.ml} : {kcal: '', p: '', f: '', c: '', ml: false},
     search: '', confirmDelete: false, msg: '', busy: false,
   };
@@ -90,7 +90,7 @@ function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: do
   function result(){
     const d = draftFood(state, FOODS);
     if (!d.v) return state.source === 'recipe'
-      ? '<p class="muted">Add the ingredients and the baked weight to see it per 100 g.</p>' : '';
+      ? '<p class="muted">Add the ingredients to see it per 100 g.</p>' : '';
     const per = `Per 100 ${d.ml ? 'ml' : 'g'}: ${Math.round(d.v[0])} cal · ${r1(d.v[1])}g P · ${r1(d.v[2])}g F · ${r1(d.v[3])}g C`;
     const u = d.unit ? `<br>One ${h(d.unit.n)} (${d.unit.g} g): ${Math.round(d.v[0] * d.unit.g / 100)} cal` : '';
     return `<div class="food-result">${per}${u}</div>`;
@@ -136,14 +136,14 @@ function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: do
       <label><input type="radio" name="source" value="recipe"${state.source === 'recipe' ? ' checked' : ''}> From my recipe</label>
       <label><input type="radio" name="source" value="label"${state.source === 'label' ? ' checked' : ''}> From a label</label>
       ${state.source === 'recipe' ? `
-        <p class="muted">Leave out water and salt; the baked weight takes care of the water. Put a starter's flour with the flours.</p>
+        <p class="muted">Leave out water and salt. If cooking or baking changes the weight, weigh it once made. Otherwise leave the weight blank.</p>
         ${state.parts.map((p, i) => `<div class="food-part">
           <span class="fp-name">${h(FOODS[p.food] ? FOODS[p.food].l : p.food + ' (no longer available)')}</span>
           <input class="short" type="number" inputmode="decimal" min="0" step="any" data-g="${i}" value="${h(p.g)}"> g
           <button type="button" class="fp-remove" data-rm="${i}" aria-label="Remove">✕</button></div>`).join('')}
-        <label>Add an ingredient <input name="search" value="${h(state.search)}" placeholder="flour…" autocomplete="off"></label>
+        <label>Add an ingredient <input name="search" value="${h(state.search)}" placeholder="oats, flour…" autocomplete="off"></label>
         ${hits.map(f => `<button type="button" class="food-hit" data-k="${h(f.k)}">${h(f.e)} ${h(f.l)}</button>`).join('')}
-        <label>Baked weight <input name="baked" class="short" type="number" inputmode="decimal" min="0" step="any" value="${h(state.baked)}"> g</label>`
+        <label>Weight once made <input name="baked" class="short" type="number" inputmode="decimal" min="0" step="any" value="${h(state.baked)}"> g</label>`
       : `<p class="muted">From the nutrition panel, per 100 ${L.ml ? 'ml' : 'g'}.</p>
         ${['kcal', 'p', 'f', 'c'].map(k => `<label>${{kcal: 'Calories (kcal)', p: 'Protein (g)', f: 'Fat (g)', c: 'Carbs (g)'}[k]}
           <input class="short" type="number" inputmode="decimal" min="0" step="any" name="l-${k}" value="${h(L[k])}"></label>`).join('')}
@@ -211,7 +211,6 @@ function mountFoodForm(root, {bundle, data, food = null, from = null, onDone: do
     if (d.source === 'recipe'){
       if (!state.parts.length) return 'Add the ingredients.';
       if (state.parts.some(p => !FOODS[p.food])) return 'Remove the ingredient that is no longer available.';
-      if (!(+state.baked > 0)) return 'Add the baked weight.';
     } else if (!d.v) return 'Add all four numbers from the label.';
     if (!d.v || !(d.v[0] > 0)) return 'This food has no calories. Check the amounts.';
     return '';

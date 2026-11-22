@@ -16,12 +16,12 @@
  */
 const STYLE = {
   pre:      {em:"☕", bg:"#FCF2D3", fg:"#082B35"},
-  breakfast:{em:"🥣", bg:"#E0F3F7", fg:"#082B35"},
-  intra:    {em:"💧", bg:"#E9F5D9", fg:"#082B35"},
-  snack:    {em:"🍎", bg:"#FDEEEB", fg:"#082B35"},
-  lunch:    {em:"🍽️", bg:"#DDECC6", fg:"#082B35"},
+  breakfast:{em:"🥣", bg:"#E0F3F8", fg:"#082B35"},
+  intra:    {em:"💧", bg:"#E9F4D9", fg:"#082B35"},
+  snack:    {em:"🍎", bg:"#FDEFEA", fg:"#082B35"},
+  lunch:    {em:"🍽️", bg:"#EBF4DB", fg:"#082B35"},
   dinner:   {em:"🌙", bg:"#F9EAE7", fg:"#082B35"},
-  dessert:  {em:"🍫", bg:"#FBF2D5", fg:"#082B35"},
+  dessert:  {em:"🍫", bg:"#FEF2CF", fg:"#082B35"},
 };
 /* every swap is within 10% (or 4 g) on calories, protein, fat and carbs (Sandy, 2026-10-23),
    except pasta and lean beef, offered everywhere and matched on calories (2026-10-31) */

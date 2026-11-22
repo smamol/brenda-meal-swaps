@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Meal Swaps">
-<meta name="theme-color" content="#FBF2D5">
+<meta name="theme-color" content="#FEF2CF">
 <link rel="apple-touch-icon" href="apple-touch-icon-n8.png">
 <link rel="icon" type="image/png" href="icon-n8.png">
 <title>Meal Swaps</title>
@@ -22,10 +22,10 @@
   :root{
     /* Nomad8 tokens */
     --n8-ink:#082B35; --n8-ink-80:#3a5259; --n8-ink-60:#6b7d82; --n8-ink-20:#cdd4d6;
-    --n8-cream:#FBF2D5; --n8-paper:#FFFFFF; --n8-border:#E6E4DF;
+    --n8-cream:#FEF2CF; --n8-paper:#FFFFFF; --n8-border:#E6E4DF;
     --n8-green:#97C93D; --n8-orange:#E97A52; --n8-yellow:#F5B915;
-    --n8-wash-green:#DDECC6; --n8-wash-yellow:#FCF2D3; --n8-wash-pink:#FDEEEB;
-    --n8-wash-blue:#E0F3F7; --n8-wash-sage:#E9F5D9; --n8-wash-blush:#F9EAE7;
+    --n8-wash-green:#EBF4DB; --n8-wash-yellow:#FCF2D3; --n8-wash-pink:#FDEFEA;
+    --n8-wash-blue:#E0F3F8; --n8-wash-sage:#E9F4D9; --n8-wash-blush:#F9EAE7;
     --n8-font-serif:"Feijoa","Iowan Old Style",Charter,Palatino,Georgia,serif;
     --n8-font-ui:"GT Walsheim","Avenir Next",Avenir,-apple-system,"Helvetica Neue",Arial,sans-serif;
 
@@ -191,7 +191,7 @@
   .from-label{font-family:var(--n8-font-ui); font-size:10px; text-transform:uppercase; letter-spacing:.06em;
     color:var(--muted2); border:1px solid var(--line); border-radius:4px; padding:0 4px; white-space:nowrap}
   /* brand: nomad8 (deploy.js) */
-  :root{--n8-ink:#082B35; --n8-ink-80:#3a5259; --n8-ink-60:#6b7d82; --n8-ink-20:#cdd4d6; --n8-cream:#FBF2D5; --n8-paper:#FFFFFF; --n8-border:#E6E4DF; --n8-green:#97C93D; --n8-orange:#E97A52; --n8-yellow:#F5B915; --n8-wash-green:#DDECC6; --n8-wash-yellow:#FCF2D3; --n8-wash-pink:#FDEEEB; --n8-wash-blue:#E0F3F7; --n8-wash-sage:#E9F5D9; --n8-wash-blush:#F9EAE7; --cal:#1E6B7D; --pro:#5C8512; --fat:#C0521F; --carb:#8A6A08}
+  :root{--n8-ink:#082B35; --n8-ink-80:#3a5259; --n8-ink-60:#6b7d82; --n8-ink-20:#cdd4d6; --n8-cream:#FEF2CF; --n8-paper:#FFFFFF; --n8-border:#E6E4DF; --n8-green:#97C93D; --n8-orange:#E97A52; --n8-yellow:#F5B915; --n8-wash-green:#EBF4DB; --n8-wash-yellow:#FCF2D3; --n8-wash-pink:#FDEFEA; --n8-wash-blue:#E0F3F8; --n8-wash-sage:#E9F4D9; --n8-wash-blush:#F9EAE7; --cal:#1E6B7D; --pro:#5C8512; --fat:#C0521F; --carb:#8A6A08}
 </style>
 </head>
 <body>
@@ -209,17 +209,17 @@
      kept on the phone for offline use (data.js); view.js draws them with the
      shared engine. supabase-js ships with the site, never from a CDN.
      ?v= must match APP_VERSION below. -->
-<script src="vendor/supabase.js?v=2026-11-22.1"></script>
-<script src="config.js?v=2026-11-22.1"></script>
-<script src="engine.js?v=2026-11-22.1"></script>
-<script src="view.js?v=2026-11-22.1"></script>
-<script src="data.js?v=2026-11-22.1"></script>
-<script src="signin.js?v=2026-11-22.1"></script>
-<script src="coach.js?v=2026-11-22.1"></script>
-<script src="foodform.js?v=2026-11-22.1"></script>
+<script src="vendor/supabase.js?v=2026-11-22.2"></script>
+<script src="config.js?v=2026-11-22.2"></script>
+<script src="engine.js?v=2026-11-22.2"></script>
+<script src="view.js?v=2026-11-22.2"></script>
+<script src="data.js?v=2026-11-22.2"></script>
+<script src="signin.js?v=2026-11-22.2"></script>
+<script src="coach.js?v=2026-11-22.2"></script>
+<script src="foodform.js?v=2026-11-22.2"></script>
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-11-22.1';
+const APP_VERSION = '2026-11-22.2';
 
 /* ---------- sign-in, then this person's plan ----------
    The phone's copy shows at once; the fresh one replaces it when it arrives,
