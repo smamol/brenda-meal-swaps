@@ -3,21 +3,61 @@
  * as input and returns the functions the page and evals.js use. Pulled out of
  * index.html on 2026-10-20 (ARCHITECTURE.md, step 1). No globals, no DOM.
  *
- *   const E = createEngine(FOODS, POOLS, {dislikes, brands});
+ *   const E = createEngine(FOODS, POOLS, {dislikes, brands, ownFoods});
  *   E.mealMacros(meal)   -> [kcal, p, f, c]
- *   E.computeSwaps(ing)  -> [{k, e, label, m, d, byCal}, ...]
+ *   E.computeSwaps(ing)  -> [{k, e, label, m, d, byCal, own}, ...]
  *
  * person (step 2, 2026-10-20) is the one thing that differs per client: foods
  * they don't like leave every group, and their brand products ({k, pool}) join
- * the named group for them alone. Omit it for the shared groups as they are.
+ * the named group for them alone. Their own foods (ownFoods, 2026-11-22:
+ * {id: {name, emoji, pools, unit, ml, source, recipe, v}}) join their groups
+ * the same way. Omit person for the shared groups as they are.
  */
-function createEngine(FOODS, POOLS, person = {}){
+const OWN_PREFIX = 'own:';
+/* a home bake's macros per 100 g: its library ingredients' macros over the
+   baked weight. Water and salt are left out; the baked weight carries the
+   water. null when an ingredient has left the library or nothing is entered. */
+function recipePer100(recipe, LIBRARY){
+  if (!recipe || !(recipe.baked > 0) || !Array.isArray(recipe.parts) || !recipe.parts.length) return null;
+  const t = [0, 0, 0, 0];
+  for (const p of recipe.parts){
+    const F = LIBRARY[p.food];
+    if (!F || !(p.g >= 0)) return null;
+    for (let i = 0; i < 4; i++) t[i] += F.v[i] * p.g / 100;
+  }
+  return t.map(x => x * 100 / recipe.baked);
+}
+/* an own food's macros per 100: worked out from its recipe each time, so a
+   library correction reaches it; the last saved figures when the recipe can't
+   be (an ingredient has gone), and the label's figures for a label food */
+function ownFoodV(o, LIBRARY){
+  if (o.source === 'recipe'){ const v = recipePer100(o.recipe, LIBRARY); if (v) return v; }
+  return Array.isArray(o.v) && o.v.length === 4 ? o.v : null;
+}
+function createEngine(LIBRARY, POOLS, person = {}){
   const scaleV = (v,g) => v.map(x => x*g/100);
   const dislikes = new Set(person.dislikes || []);
+  /* a client's own foods (2026-11-22, docs/plans/2026-11-22-own-pool-foods-pitch.md)
+     join this person's copy of the library under keys no library food has, and
+     the groups they name for this person alone, the way a brand does. They
+     follow the normal 10% / 4 g rule. The shared library is never changed. */
+  const FOODS = {...LIBRARY}, ownIn = {};
+  for (const [id, o] of Object.entries(person.ownFoods || {})){
+    const v = ownFoodV(o, LIBRARY);
+    if (!v || !(v[0] > 0)) continue;
+    const k = OWN_PREFIX + id, F = {l: o.name, e: o.emoji || '🍽️', v, own: o.source === 'recipe' ? 'recipe' : 'label'};
+    if (o.unit && o.unit.g > 0){
+      const n = (o.unit.n || 'piece').trim();
+      F.u = {n: `${n} ${o.name}`, p: `${o.unit.p || n + 's'} ${o.name}`, g: +o.unit.g};
+    } else if (o.ml) F.ml = true;
+    FOODS[k] = F;
+    for (const pool of o.pools || []) (ownIn[pool] = ownIn[pool] || []).push(k);
+  }
   const effectivePools = {};
   for (const [name, pool] of Object.entries(POOLS)){
     const keys = pool.keys.filter(k => !dislikes.has(k));
     for (const br of person.brands || []) if (br.pool === name && !keys.includes(br.k)) keys.push(br.k);
+    for (const k of ownIn[name] || []) keys.push(k);
     const always = (pool.always || []).filter(k => !dislikes.has(k));
     effectivePools[name] = {...pool, keys, always};
   }
@@ -117,14 +157,13 @@ function createEngine(FOODS, POOLS, person = {}){
           best = {g, label, m, score};
       }
       if (!best || (!byCal && !fits(base, best.m))) continue;
-      out.push({k, e:F.e, label:best.label, m:best.m, d:best.m.map((x,i)=>x-base[i]), byCal});
+      out.push({k, e:F.e, label:best.label, m:best.m, d:best.m.map((x,i)=>x-base[i]), byCal, own: F.own});
     }
     return out;
   }
   /* Whole-meal alternatives (meal.mealSwaps): curated combos that replace the
      entire snack — e.g. protein pancakes + a banana — under the same rule on
-     calories and every macro; one that doesn't fit isn't shown. A client's
-     own dishes are separate (ownDishAlts, below). */
+     calories and every macro; one that doesn't fit isn't shown. */
   function mealSwapAlts(meal){
     if (!meal.mealSwaps) return [];
     const base = mealMacros(meal);
@@ -134,79 +173,8 @@ function createEngine(FOODS, POOLS, person = {}){
       return {e: ms.e, label: ms.parts.map(ingLabel).join(' + '), m, d: m.map((x,i)=>x-base[i]), parts: ms.parts};
     }).filter(alt => fits(base, alt.m));
   }
-  /* A client's own dishes (step 4, 2026-10-31; docs/plans/2026-10-31-step4-own-dishes-design.md).
-     person.dishes: [{id, name, emoji, slot:{type,title}, parts}], each part a
-     library food {food, g|ml|u} or the client's own product {product, g|ml};
-     person.products: {id: {name, v:[cal,P,F,C] per 100, ml}}. Own products
-     never enter FOODS or a pool, so no shared swap can offer one. A dish shows
-     on every meal with its slot, the whole dish scaled by one factor to the
-     meal's calories (Sandy: "it can scale e.g. 1 banana"), each part rounded
-     to something you can weigh or count. A dish naming a food or product that
-     no longer exists is left out. */
-  const products = person.products || {}, dishes = person.dishes || [];
-  function dishMatches(dish, meal){
-    return !!dish.slot && dish.slot.type === meal.type && dish.slot.title === meal.title;
-  }
-  /* one part at scale s: [label, macros, fromLabel] */
-  function dishPart(part, s){
-    if (part.product != null){
-      const P = products[part.product];
-      const amt = part.ml != null ? part.ml : part.g;
-      const x = amt * s, ml = !!P.ml || part.ml != null;
-      const q = ml ? Math.max(5, Math.round(x / 5) * 5) : roundG(x, amt);
-      return [`${q}${ml ? 'ml' : 'g'} ${P.name}`, scaleV(P.v, q), true];
-    }
-    const F = FOODS[part.food];
-    if (part.u != null){
-      const step = F.u.step || 0.5, lo = Math.max(0.5, F.u.min || 0);
-      let u = Math.max(lo, Math.round(part.u * s / step) * step);
-      if (F.u.max) u = Math.min(u, F.u.max);   /* rice cakes and corn thins: no more than 4 */
-      return [unitLabel(F, u), scaleV(F.v, u * F.u.g), false];
-    }
-    if (part.ml != null){
-      const ml = Math.max(5, Math.round(part.ml * s / 5) * 5);
-      return [`${ml}ml ${F.l}`, scaleV(F.v, ml), false];
-    }
-    const g = roundG(part.g * s, part.g);
-    return [`${g}g ${F.l}`, scaleV(F.v, g), false];
-  }
-  /* grams as portions() rounds them: 1 g under 20 g, else 5 g; never below 5 g
-     unless the client entered less */
-  function roundG(x, entered){
-    const g = x < 20 ? Math.round(x) : Math.round(x / 5) * 5;
-    return Math.max(entered >= 5 ? 5 : 1, g);
-  }
-  function dishKnown(dish){
-    return Array.isArray(dish.parts) && dish.parts.length > 0 && dish.parts.every(p =>
-      p.product != null ? !!products[p.product] :
-      !!FOODS[p.food] && (p.u == null || !!FOODS[p.food].u));
-  }
-  function sizeDish(dish, target){
-    const at = s => {
-      const parts = dish.parts.map(p => dishPart(p, s)), m = [0,0,0,0];
-      for (const [, v] of parts) for (let i=0;i<4;i++) m[i]+=v[i];
-      return {parts, m};
-    };
-    const c0 = at(1).m[0];
-    const s0 = c0 > 0 ? target / c0 : 1;
-    let best = null;
-    for (let f = 0.85; f <= 1.15 + 1e-9; f += 0.01){
-      const s = s0 * f, r = at(s), miss = Math.abs(r.m[0] - target);
-      if (!best || miss < best.miss - 1e-9 || (Math.abs(miss - best.miss) <= 1e-9 && Math.abs(f - 1) < Math.abs(best.f - 1)))
-        best = {...r, miss, f};
-    }
-    return best;
-  }
-  function ownDishAlts(meal){
-    const base = mealMacros(meal);
-    return dishes.filter(d => dishMatches(d, meal) && dishKnown(d)).map(d => {
-      const {parts, m} = sizeDish(d, base[0]);
-      return {id: d.id, e: d.emoji || '🍽️', label: parts.map(p => p[0]).join(' + '), m,
-        d: m.map((x,i)=>x-base[i]), own: true, parts: parts.map(([label, , fromLabel]) => ({label, fromLabel}))};
-    });
-  }
-  return { effectivePools, scaleV, ingAmountG, ingMacros, mealMacros, fmtU, unitLabel, roundW, weightTag, ingLabel, computeSwaps, mealSwapAlts, fits, ownDishAlts, dishMatches, dishKnown };
+  return { FOODS, effectivePools, scaleV, ingAmountG, ingMacros, mealMacros, fmtU, unitLabel, roundW, weightTag, ingLabel, computeSwaps, mealSwapAlts, fits };
 }
 
 /* Node: evals.js requires this file. Browser: plain script, createEngine is global. */
-if (typeof module !== 'undefined' && module.exports) module.exports = { createEngine };
+if (typeof module !== 'undefined' && module.exports) module.exports = { createEngine, recipePer100, ownFoodV, OWN_PREFIX };

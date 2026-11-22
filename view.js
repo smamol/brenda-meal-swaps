@@ -5,11 +5,14 @@
  *
  *   mountPlan(root, bundle, {onFlag, status})
  *
- * bundle = {plan, foods, pools, brand, coachName, loadedAt, clientId}. The
+ * bundle = {plan, foods, pools, brand, coachName, loadedAt, clientId, ownFoods}. The
  * engine is built from the bundle's own plan, so a coach opening a client sees
  * that client's dislikes, brands and colours, never their own. onFlag, when
  * given, puts a "Something's wrong with this swap" button on every swap row
- * (coach and admin views only). The chosen day is remembered by name.
+ * (coach and admin views only). onAddFood(from?) and onEditFood(id), when
+ * given, put "Add my own …" on every swap line, Edit on the client's own
+ * foods, and a My foods list at the end (own view only). The chosen day is
+ * remembered by name.
  */
 const STYLE = {
   pre:      {em:"☕", bg:"#FCF2D3", fg:"#082B35"},
@@ -26,7 +29,7 @@ const SWAP_RULE = 'all within 10%';
 const DAY_KEY = 'mealday-name';
 
 const R = x => Math.round(x);
-/* a client types dish and product names, and their coach sees them: escape */
+/* a client types their own foods' names, and their coach sees them: escape */
 const esc = x => String(x == null ? '' : x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function macroLine(m){
   return `<span class="m-cal">${R(m[0])} cal</span> · <span class="m-pro">${R(m[1])}g P</span> · <span class="m-fat">${R(m[2])}g F</span> · <span class="m-carb">${R(m[3])}g C</span>`;
@@ -56,14 +59,13 @@ function shortDate(iso){
 
 function mountPlan(root, bundle, opts = {}){
   const { plan: PLAN, foods: FOODS, pools: POOLS, brand } = bundle;
-  const { ingMacros, mealMacros, ingLabel, computeSwaps, mealSwapAlts, ownDishAlts, dishMatches, dishKnown } =
-    createEngine(FOODS, POOLS, {dislikes: PLAN.dislikes, brands: PLAN.brands,
-      products: bundle.products, dishes: bundle.dishes});
-  /* whole-meal swaps: the plan's own, then the client's own dishes (step 4) */
-  const wholeAlts = meal => [...mealSwapAlts(meal), ...ownDishAlts(meal)];
-  /* Delete on the dish row, confirmed in the row (Sandy, 2026-10-31); own view only */
-  const delBtn = id => opts.onDeleteDish ? `<span class="dish-del" data-dish="${esc(id)}"><button class="dish-delete" type="button">Delete</button></span>` : '';
-  const addBtn = () => opts.onAddDish ? `<button class="dish-add" type="button">Add my own dish</button>` : '';
+  const E = createEngine(FOODS, POOLS, {dislikes: PLAN.dislikes, brands: PLAN.brands, ownFoods: bundle.ownFoods});
+  const { ingMacros, mealMacros, ingLabel, computeSwaps, mealSwapAlts } = E;
+  const ownFoods = bundle.ownFoods || {};
+  const OWN_TAG = {recipe: 'home made', label: 'from label'};
+  /* "Add my own bread" on a line's swap list (own view only) */
+  const addBtn = (mi, ii, pool) => opts.onAddFood && pool
+    ? `<button class="food-add" type="button" data-m="${mi}" data-i="${ii}">Add my own ${esc(typeof groupName === 'function' ? groupName(pool) : pool)}</button>` : '';
   const DAYS = PLAN.days.map(d => ({...d, meals: d.meals.map(k => PLAN.meals[k])}));
   for (const [k, v] of Object.entries((brand && brand.vars) || {})) root.style.setProperty(k, v);
 
@@ -88,14 +90,12 @@ function mountPlan(root, bundle, opts = {}){
         flags.push({...ctx, swap: sw.label});
         btn = `<button class="flag" type="button" data-f="${flags.length - 1}">Something's wrong with this swap</button>`;
       }
-      /* a client's own dish (step 4): its parts, own products marked "from label" */
-      const dish = sw.id != null;
-      if (dish && opts.onEditDish) btn += `<button class="dish-edit" type="button" data-dish="${esc(sw.id)}">Edit</button>`;
-      if (dish) btn += delBtn(sw.id);
-      const name = dish ? sw.parts.map(p => esc(p.label) + (p.fromLabel ? ' <span class="from-label">from label</span>' : '')).join(' + ') : sw.label;
-      const delta = sw.byCal ? deltaLine(sw, 0) + ' · matched on calories'
-        : dish ? deltaLine(sw, 0) + ' · matched on calories · your own' : deltaLine(sw, basis);
-      return `<div class="swap"${dish ? ` data-dish="${esc(sw.id)}"` : ''}><div class="swap-em">${esc(sw.e)}</div><div class="swap-txt">
+      /* a client's own food (2026-11-22): tagged, and editable in the own view */
+      const ownId = sw.own ? sw.k.slice(OWN_PREFIX.length) : null;
+      if (ownId != null && opts.onEditFood) btn += `<button class="food-edit" type="button" data-food="${esc(ownId)}">Edit</button>`;
+      const name = sw.own ? `${esc(sw.label)} <span class="from-label">${OWN_TAG[sw.own]}</span>` : sw.label;
+      const delta = sw.byCal ? deltaLine(sw, 0) + ' · matched on calories' : deltaLine(sw, basis);
+      return `<div class="swap"><div class="swap-em">${esc(sw.e)}</div><div class="swap-txt">
     <div class="swap-name">${name}</div>
     <div class="swap-d">${delta}</div>${btn}</div></div>`;
     }).join('');
@@ -131,15 +131,15 @@ function mountPlan(root, bundle, opts = {}){
       const whole = {day: day.name, meal: meal.title, planned: meal.title};
       if (meal.folded){
         const fSwaps = meal.ing.filter(i=>i.pool).map(ing=>({ing, swaps:computeSwaps(ing)})).filter(x=>x.swaps.length);
-        const mAlts = wholeAlts(meal);
-        const hasSwaps = fSwaps.length > 0 || mAlts.length > 0 || !!opts.onAddDish;
+        const mAlts = mealSwapAlts(meal);
+        const hasSwaps = fSwaps.length > 0 || mAlts.length > 0;
         const badge = hasSwaps ? `<span class="badge">${fSwaps.length + (mAlts.length ? 1 : 0)} swappable</span>`
                                 : `<span class="badge none">as planned</span>`;
         const ingSwapHtml = fSwaps.map(({ing, swaps})=>
             `<div class="swaps-label">Swap for — ${SWAP_RULE} — instead of ${ingLabel(ing)}</div>${
             swapRows(swaps, POOLS[ing.pool].b, {day: day.name, meal: meal.title, planned: ingLabel(ing)})}`).join('');
         const mealSwapHtml = mAlts.length ? `<div class="swaps-label">Swap the whole meal — ${SWAP_RULE}</div>${swapRows(mAlts, 0, whole)}` : '';
-        const swapHtml = hasSwaps ? `<div class="fold-swaps">${ingSwapHtml}${mealSwapHtml}${addBtn()}</div>` : '';
+        const swapHtml = hasSwaps ? `<div class="fold-swaps">${ingSwapHtml}${mealSwapHtml}</div>` : '';
         return `<div class="meal ${hasSwaps?'swappable':''}">
         <div class="meal-head">
           <div class="icon" style="background:${s.bg};color:${s.fg}">${s.em}</div>
@@ -154,11 +154,11 @@ function mountPlan(root, bundle, opts = {}){
       const rows = meal.ing.map((ing, ii)=>{
         const F = FOODS[ing.k];
         const swaps = ing.pool ? computeSwaps(ing) : [];
-        const swappable = swaps.length > 0;
-        const swapHtml = swappable ? `<div class="swaps">
+        const add = addBtn(mi, ii, ing.pool);
+        const swappable = swaps.length > 0 || !!add;
+        const swapHtml = swappable ? `<div class="swaps">${swaps.length ? `
           <div class="swaps-label">Swap for — ${SWAP_RULE}</div>${
-          swapRows(swaps, POOLS[ing.pool].b, {day: day.name, meal: meal.title, planned: ingLabel(ing)})
-        }</div>` : '';
+          swapRows(swaps, POOLS[ing.pool].b, {day: day.name, meal: meal.title, planned: ingLabel(ing)})}` : ''}${add}</div>` : '';
         return `<div class="ing ${swappable?'swappable':''}" data-m="${mi}" data-i="${ii}">
         <div class="ing-line">
           <div class="ing-em">${F.e}</div>
@@ -172,10 +172,9 @@ function mountPlan(root, bundle, opts = {}){
       const nSwap = meal.ing.filter(i=>i.pool && computeSwaps(i).length).length;
       const badge = nSwap ? `<span class="badge">${nSwap} swappable</span>`
                           : `<span class="badge none">as planned</span>`;
-      const mAlts = wholeAlts(meal);
-      const open = mAlts.length > 0 || !!opts.onAddDish;
-      const msHtml = open ? `<div class="fold-swaps">${mAlts.length ?
-        `<div class="swaps-label">Swap the whole snack — ${SWAP_RULE}</div>${swapRows(mAlts, 0, whole)}` : ''}${addBtn()}</div>` : '';
+      const mAlts = mealSwapAlts(meal);
+      const open = mAlts.length > 0;
+      const msHtml = open ? `<div class="fold-swaps"><div class="swaps-label">Swap the whole snack — ${SWAP_RULE}</div>${swapRows(mAlts, 0, whole)}</div>` : '';
       return `<div class="meal ${open?'swappable':''}">
       <div class="meal-head">
         <div class="icon" style="background:${s.bg};color:${s.fg}">${s.em}</div>
@@ -188,16 +187,15 @@ function mountPlan(root, bundle, opts = {}){
       <div class="ings">${rows}</div>${msHtml}</div>`;
     }).join('');
 
-    /* a dish whose meal or food has gone shows on no meal; list it so it can
-       still be edited or deleted (own view only) */
-    if (opts.onEditDish){
-      const hidden = (bundle.dishes || []).filter(d =>
-        !dishKnown(d) || !Object.values(PLAN.meals).some(m => dishMatches(d, m)));
-      if (hidden.length) mealsEl.insertAdjacentHTML('beforeend', `<div class="dish-hidden">
-        <div class="swaps-label">Your dishes not showing</div>${hidden.map(d => `<div class="swap">
-        <div class="swap-em">${esc(d.emoji)}</div><div class="swap-txt"><div class="swap-name">${esc(d.name)}</div>
-        <div class="swap-d">${dishKnown(d) ? 'Its meal has gone from your plan' : 'A food in it is no longer available'}</div>
-        <button class="dish-edit" type="button" data-dish="${esc(d.id)}">Edit</button>${delBtn(d.id)}</div></div>`).join('')}</div>`);
+    /* every own food, so one that fits no line today can still be edited (own view only) */
+    if (opts.onEditFood){
+      const list = Object.entries(ownFoods);
+      mealsEl.insertAdjacentHTML('beforeend', `<div class="my-foods"><div class="swaps-label">My foods</div>${list.map(([id, o]) => `<div class="swap">
+        <div class="swap-em">${esc(o.emoji)}</div><div class="swap-txt"><div class="swap-name">${esc(o.name)}
+        <span class="from-label">${OWN_TAG[o.source] || ''}</span></div>
+        <div class="swap-d">Instead of ${esc((o.pools || []).map(g => typeof groupName === 'function' ? groupName(g) : g).join(', ') || 'nothing yet')}</div>
+        <button class="food-edit" type="button" data-food="${esc(id)}">Edit</button></div></div>`).join('')}
+        <button class="food-add" type="button">Add my own food</button></div>`);
     }
     mealsEl.querySelectorAll('.ing.swappable .ing-line').forEach(h=>{
       h.addEventListener('click',()=>h.parentElement.classList.toggle('open'));
@@ -208,33 +206,15 @@ function mountPlan(root, bundle, opts = {}){
     mealsEl.querySelectorAll('.flag').forEach(b=>{
       b.addEventListener('click', e=>{ e.stopPropagation(); opts.onFlag(flags[+b.dataset.f]); });
     });
-    mealsEl.querySelectorAll('.meal').forEach((el, mi)=>{
-      const b = el.querySelector('.dish-add');
-      if (b) b.addEventListener('click', e=>{ e.stopPropagation(); opts.onAddDish(day.meals[mi]); });
+    mealsEl.querySelectorAll('.food-add').forEach(b=>{
+      b.addEventListener('click', e=>{
+        e.stopPropagation();
+        const meal = b.dataset.m != null ? day.meals[+b.dataset.m] : null;
+        opts.onAddFood(meal ? {meal, ing: meal.ing[+b.dataset.i]} : null);
+      });
     });
-    mealsEl.querySelectorAll('.dish-del').forEach(wrap=>{
-      const ask = () => {
-        wrap.innerHTML = `Delete this dish? <button class="dish-del-yes" type="button">Delete</button> <button class="dish-del-no" type="button">Keep it</button>`;
-        wrap.querySelector('.dish-del-no').addEventListener('click', e=>{ e.stopPropagation(); idle(); });
-        wrap.querySelector('.dish-del-yes').addEventListener('click', async e=>{
-          e.stopPropagation();
-          wrap.textContent = 'Deleting…';
-          try { await opts.onDeleteDish(wrap.dataset.dish); }
-          catch (err){
-            idle();
-            wrap.insertAdjacentHTML('beforeend', ` <span class="dish-del-msg">${err && err.kind === 'offline'
-              ? 'You need a connection to delete a dish.' : 'Something went wrong. Try again'}</span>`);
-          }
-        });
-      };
-      const idle = () => {
-        wrap.innerHTML = '<button class="dish-delete" type="button">Delete</button>';
-        wrap.querySelector('.dish-delete').addEventListener('click', e=>{ e.stopPropagation(); ask(); });
-      };
-      idle();
-    });
-    mealsEl.querySelectorAll('.dish-edit').forEach(b=>{
-      b.addEventListener('click', e=>{ e.stopPropagation(); opts.onEditDish(b.dataset.dish); });
+    mealsEl.querySelectorAll('.food-edit').forEach(b=>{
+      b.addEventListener('click', e=>{ e.stopPropagation(); opts.onEditFood(b.dataset.food); });
     });
 
     const planLine = bundle.loadedAt
