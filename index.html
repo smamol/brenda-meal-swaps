@@ -190,6 +190,24 @@
   .food-actions{margin-top:12px} .food-warn{color:var(--fat); font-size:13px} .food-msg{color:var(--fat); font-size:13px; min-height:1em}
   .from-label{font-family:var(--n8-font-ui); font-size:10px; text-transform:uppercase; letter-spacing:.06em;
     color:var(--muted2); border:1px solid var(--line); border-radius:4px; padding:0 4px; white-space:nowrap}
+
+  /* check-in: today's tap, the streak and 28 days of dots (step 5) */
+  .checkin{background:var(--card); border:1px solid var(--line); padding:12px 14px; margin:0 0 14px;
+    font-family:var(--n8-font-ui)}
+  .ci-head{display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-size:13px; color:var(--muted)}
+  .ci-streak b{font-family:var(--n8-font-serif); font-size:20px; color:var(--n8-ink); margin-right:3px}
+  .ci-btns{display:flex; gap:8px; margin:10px 0 12px}
+  .ci-btns button{flex:1; padding:10px 0; border:1px solid var(--n8-ink-20); border-radius:999px; background:transparent;
+    color:var(--n8-ink); font:inherit; font-size:15px; cursor:pointer}
+  .ci-btns button.on{background:var(--n8-ink); border-color:var(--n8-ink); color:#fff}
+  .ci-dots{display:grid; grid-template-columns:repeat(28,1fr); gap:3px}
+  .ci-dots i{aspect-ratio:1; max-width:10px; width:100%; border-radius:50%; justify-self:center; box-sizing:border-box;
+    border:1.5px solid var(--n8-ink-20)}
+  .ci-dots i.done{background:var(--pro); border-color:var(--pro)}
+  .ci-dots i.missed{background:var(--n8-ink-20)}
+  .ci-dots i.open{border-color:var(--n8-ink)}
+  .ci-dots i.none{border-style:dotted}
+  .ci-msg{margin:8px 0 0; font-size:13px; color:var(--fat)} .ci-msg:empty{display:none}
   /* brand: nomad8 (deploy.js) */
   :root{--n8-ink:#082B35; --n8-ink-80:#3a5259; --n8-ink-60:#6b7d82; --n8-ink-20:#cdd4d6; --n8-cream:#FEF2CF; --n8-paper:#FFFFFF; --n8-border:#E6E4DF; --n8-green:#97C93D; --n8-orange:#E97A52; --n8-yellow:#F5B915; --n8-wash-green:#EBF4DB; --n8-wash-yellow:#FCF2D3; --n8-wash-pink:#FDEFEA; --n8-wash-blue:#E0F3F8; --n8-wash-sage:#E9F4D9; --n8-wash-blush:#F9EAE7; --cal:#1E6B7D; --pro:#5C8512; --fat:#C0521F; --carb:#8A6A08}
 </style>
@@ -209,17 +227,18 @@
      kept on the phone for offline use (data.js); view.js draws them with the
      shared engine. supabase-js ships with the site, never from a CDN.
      ?v= must match APP_VERSION below. -->
-<script src="vendor/supabase.js?v=2026-11-22.3"></script>
-<script src="config.js?v=2026-11-22.3"></script>
-<script src="engine.js?v=2026-11-22.3"></script>
-<script src="view.js?v=2026-11-22.3"></script>
-<script src="data.js?v=2026-11-22.3"></script>
-<script src="signin.js?v=2026-11-22.3"></script>
-<script src="coach.js?v=2026-11-22.3"></script>
-<script src="foodform.js?v=2026-11-22.3"></script>
+<script src="vendor/supabase.js?v=2026-11-22.4"></script>
+<script src="config.js?v=2026-11-22.4"></script>
+<script src="engine.js?v=2026-11-22.4"></script>
+<script src="view.js?v=2026-11-22.4"></script>
+<script src="data.js?v=2026-11-22.4"></script>
+<script src="signin.js?v=2026-11-22.4"></script>
+<script src="coach.js?v=2026-11-22.4"></script>
+<script src="foodform.js?v=2026-11-22.4"></script>
+<script src="checkins.js?v=2026-11-22.4"></script>
 <script>
 /* ---------- version (keep in sync with version.txt on deploy) ---------- */
-const APP_VERSION = '2026-11-22.3';
+const APP_VERSION = '2026-11-22.4';
 
 /* ---------- sign-in, then this person's plan ----------
    The phone's copy shows at once; the fresh one replaces it when it arrives,
@@ -233,6 +252,7 @@ const D = createData(sb);
 const app = document.getElementById('app');
 let onScreen = null;   /* what's drawn, so a refresh that changes nothing doesn't redraw */
 let view = 0;          /* bumped on every navigation; a boot that finishes after one leaves the screen alone */
+let checkIns = null;   /* the check-in strip on the plan, redrawn when the phone wakes on a new day */
 
 /* draws a bundle; false if it can't be drawn. A fresh bundle is saved only now */
 function show(bundle, status, {fresh = false, signIn = false} = {}){
@@ -242,6 +262,8 @@ function show(bundle, status, {fresh = false, signIn = false} = {}){
       onEditFood: id => foodForm(bundle, {food: id})}); }
     catch (e){ onScreen = null; return false; }
     onScreen = key;
+    /* today's check-in, on a person's own plan only (step 5); it can't stop the plan showing */
+    try { checkIns = mountCheckIns(app.querySelector('#checkin'), {data: D}); } catch (e){ checkIns = null; }
   }
   if (fresh) D.save(bundle);
   account.hidden = false;
@@ -324,6 +346,9 @@ async function start(){
   }
 }
 start();
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && checkIns && app.querySelector('.checkin')) checkIns.redraw();
+});
 
 /* ---------- auto-update: fetch fresh version, reload if stale (offline-safe) ---------- */
 (async function checkForUpdate(){

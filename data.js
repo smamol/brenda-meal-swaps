@@ -7,6 +7,8 @@
  *   D.boot()                  -> {bundle, status}
  *   D.cached(), D.save(bundle)
  *   D.saveFood(f), D.deleteFood(id)   the client's own foods (2026-11-22)
+ *   D.listCheckIns(), D.setCheckIn(day, status), D.clearCheckIn(day),
+ *   D.cachedCheckIns()                the person's own check-ins (step 5)
  *
  * The bundle is cached whole under one key, so an offline phone never pairs an
  * old plan with a newer food library. boot() never saves: the page saves a
@@ -16,6 +18,7 @@
  * session, when the account has no profile, or when the person signs out.
  */
 const BUNDLE_KEY = 'mealswaps-bundle';
+const CHECKINS_KEY = 'mealswaps-checkins';
 const OFFLINE = "Couldn't check for updates";
 const NO_NETWORK = 'Connect to the internet to sign in';
 const NO_PLAN = "Your dietitian hasn't added your plan yet";
@@ -102,7 +105,7 @@ function createData(supabase, storage = localStorage){
     try { storage.setItem(BUNDLE_KEY, JSON.stringify(bundle)); } catch (e){ /* full or private: still shows */ }
   }
   function clear(){
-    try { storage.removeItem(BUNDLE_KEY); } catch (e){}
+    try { storage.removeItem(BUNDLE_KEY); storage.removeItem(CHECKINS_KEY); } catch (e){}
   }
 
   async function boot(){
@@ -185,8 +188,35 @@ function createData(supabase, storage = localStorage){
     await put(supabase.from('client_products').delete().eq('id', id));
   }
 
+  /* ---------- check-ins (step 5, 2026-11-22) ----------
+     {day: 'done' | 'missed'} by NZ calendar date, the person's own only. The
+     phone keeps the last list it read, so the streak shows offline; a mark is
+     written to the phone's copy only once the server has it. */
+  function cachedCheckIns(){
+    try { return JSON.parse(storage.getItem(CHECKINS_KEY)) || null; } catch (e){ return null; }
+  }
+  function keepCheckIns(marks){
+    try { storage.setItem(CHECKINS_KEY, JSON.stringify(marks)); } catch (e){}
+    return marks;
+  }
+  async function listCheckIns(){
+    const rows = await get(supabase.from('check_ins').select('day, status').eq('user_id', await myId()).order('day', {ascending: false}));
+    return keepCheckIns(Object.fromEntries(rows.map(r => [r.day, r.status])));
+  }
+  async function setCheckIn(day, status){
+    await put(supabase.from('check_ins').upsert({user_id: await myId(), day, status, updated_at: new Date().toISOString()},
+      {onConflict: 'user_id,day'}));
+    keepCheckIns({...(cachedCheckIns() || {}), [day]: status});
+  }
+  async function clearCheckIn(day){
+    await put(supabase.from('check_ins').delete().eq('user_id', await myId()).eq('day', day));
+    const m = {...(cachedCheckIns() || {})};
+    delete m[day];
+    keepCheckIns(m);
+  }
+
   return { fetchBundle, boot, cached, save, clear, me, listClients, flagSwap, listFlags, resolveFlag,
-    saveFood, deleteFood };
+    saveFood, deleteFood, cachedCheckIns, listCheckIns, setCheckIn, clearCheckIn };
 }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { createData, isNetworkError, ownFoodFromRow };

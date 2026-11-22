@@ -69,7 +69,10 @@ function mountPlan(root, bundle, opts = {}){
   const DAYS = PLAN.days.map(d => ({...d, meals: d.meals.map(k => PLAN.meals[k])}));
   for (const [k, v] of Object.entries((brand && brand.vars) || {})) root.style.setProperty(k, v);
 
-  root.innerHTML = `<div class="tabs" id="tabs"></div>
+  /* #checkin is filled by the page for a person's own plan (checkins.js) and
+     stays empty when a coach looks at a client's */
+  root.innerHTML = `<div id="checkin"></div>
+  <div class="tabs" id="tabs"></div>
   <div class="targets">
     <h2 id="targets-title">Day Targets</h2>
     <p class="targets-sub" id="targets-sub"></p>
