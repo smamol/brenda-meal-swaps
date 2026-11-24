@@ -21,7 +21,8 @@
 const GROUP_NAMES = {protein: 'protein', starch: 'carb', bread: 'bread', spreads: 'spread', sweet: 'sweet topping',
   fruit: 'fruit', cereal: 'cereal', treat: 'treat', intra: 'training fuel', veg: 'veg', snackpack: 'snack',
   dessert: 'dessert', oats: 'oats', saladFats: 'salad topping',
-  crackersLF: 'crackers (low FODMAP)', fruitLF: 'fruit (low FODMAP)', vegLF: 'veg (low FODMAP)'};
+  fruitLF: 'fruit (low FODMAP)', vegLF: 'veg (low FODMAP)',
+  starchLF: 'carb (low FODMAP)', saladFatsLF: 'salad topping (low FODMAP)'};
 const groupName = g => GROUP_NAMES[g] || g;
 
 /* library foods a recipe can use: not disliked, and no one else's brand */
